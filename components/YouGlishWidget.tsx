@@ -46,6 +46,8 @@ export function YouGlishWidget({
 
   useEffect(() => {
     let cancelled = false
+    // Fallback: reveal the player even if onFetchDone never fires.
+    const fallback = setTimeout(() => !cancelled && setLoaded(true), 2500)
 
     function createOrFetch() {
       if (cancelled || !window.YG || !containerRef.current) return
@@ -69,6 +71,7 @@ export function YouGlishWidget({
       createOrFetch()
       return () => {
         cancelled = true
+        clearTimeout(fallback)
       }
     }
 
@@ -87,6 +90,7 @@ export function YouGlishWidget({
 
     return () => {
       cancelled = true
+      clearTimeout(fallback)
     }
   }, [phrase, lang])
 
