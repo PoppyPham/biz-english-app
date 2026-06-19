@@ -8,7 +8,7 @@
 -- ── System / curated examples ───────────────────────────────────────────────
 create table if not exists public.phrase_examples (
   id          uuid primary key default gen_random_uuid(),
-  phrase_id   uuid not null references public.phrases (id) on delete cascade,
+  phrase_id   integer not null references public.phrases (id) on delete cascade,
   text        text not null,
   sort_order  int  not null default 0,
   created_at  timestamptz not null default now()
@@ -30,7 +30,7 @@ create policy "phrase_examples_select_all"
 create table if not exists public.user_examples (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users (id) on delete cascade,
-  phrase_id   uuid not null references public.phrases (id) on delete cascade,
+  phrase_id   integer not null references public.phrases (id) on delete cascade,
   text        text not null check (char_length(trim(text)) between 1 and 500),
   created_at  timestamptz not null default now()
 );
