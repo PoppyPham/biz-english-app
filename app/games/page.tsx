@@ -1,17 +1,30 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { Layers, ListChecks, ArrowRight } from "lucide-react"
-import type { Category } from "@/lib/types"
+import { YOUR_WORDS, type Category } from "@/lib/types"
 
 export default async function GamesPage() {
   const supabase = await createClient()
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("id, name, slug, emoji, sort_order")
-    .order("sort_order")
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const [{ data: categories }, { count: myWordCount }] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, name, slug, emoji, sort_order")
+      .order("sort_order"),
+    user
+      ? supabase
+          .from("phrases")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_id", user.id)
+      : Promise.resolve({ count: 0 }),
+  ])
 
   const cats = (categories ?? []) as Category[]
+  const hasMyWords = (myWordCount ?? 0) > 0
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -73,6 +86,35 @@ export default async function GamesPage() {
               Practice a category
             </h2>
             <div className="space-y-2">
+              {/* Your Words row */}
+              {hasMyWords && (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/5 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="text-xl leading-none">{YOUR_WORDS.emoji}</span>
+                    <span className="truncate text-sm font-medium">
+                      {YOUR_WORDS.name}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {myWordCount}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Link
+                      href={`/games/flashcard?category=${YOUR_WORDS.slug}`}
+                      className="rounded-lg border border-[#22c55e]/40 px-3 py-1.5 text-xs font-medium text-[#22c55e] transition-colors hover:bg-[#22c55e]/10"
+                    >
+                      Flashcards
+                    </Link>
+                    <Link
+                      href={`/games/quiz?category=${YOUR_WORDS.slug}`}
+                      className="rounded-lg border border-[#22c55e]/40 px-3 py-1.5 text-xs font-medium text-[#22c55e] transition-colors hover:bg-[#22c55e]/10"
+                    >
+                      Quiz
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {cats.map((cat) => (
                 <div
                   key={cat.id}

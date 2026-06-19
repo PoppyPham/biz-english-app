@@ -10,8 +10,13 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { Category, Phrase, UserProgress } from "@/lib/types"
-import { BookOpen, ArrowRight, Zap } from "lucide-react"
+import {
+  YOUR_WORDS,
+  type Category,
+  type Phrase,
+  type UserProgress,
+} from "@/lib/types"
+import { BookOpen, ArrowRight, Zap, Plus } from "lucide-react"
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
@@ -28,7 +33,7 @@ async function getPageData() {
         .from("categories")
         .select("id, name, slug, emoji, sort_order")
         .order("sort_order"),
-      supabase.from("phrases").select("id, category_id"),
+      supabase.from("phrases").select("id, category_id, owner_id"),
       user
         ? supabase
             .from("user_progress")
@@ -43,7 +48,10 @@ async function getPageData() {
       Category,
       "id" | "name" | "slug" | "emoji" | "sort_order"
     >[],
-    phrases: (phrases ?? []) as Pick<Phrase, "id" | "category_id">[],
+    phrases: (phrases ?? []) as Pick<
+      Phrase,
+      "id" | "category_id" | "owner_id"
+    >[],
     progress: (progress ?? []) as Pick<
       UserProgress,
       "phrase_id" | "status" | "is_favorite" | "updated_at"
@@ -99,6 +107,15 @@ export default async function HomePage() {
   const totalPhrases = phrases.length
   const overallPct =
     totalPhrases > 0 ? Math.round((totalLearned / totalPhrases) * 100) : 0
+
+  // "Your Words" stats for the grid card.
+  const progressById = new Map(progress.map((p) => [p.phrase_id, p]))
+  const myWords = user ? phrases.filter((p) => p.owner_id === user.id) : []
+  const myLearned = myWords.filter(
+    (p) => progressById.get(p.id)?.status === "learned"
+  ).length
+  const myPct =
+    myWords.length > 0 ? Math.round((myLearned / myWords.length) * 100) : 0
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -210,6 +227,45 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {/* Your Words — only for logged-in users */}
+            {user && (
+              <Link href="/words" className="group">
+                <Card className="h-full cursor-pointer border-[#22c55e]/30 bg-[#22c55e]/5 ring-0 transition-colors hover:border-[#22c55e]/60 hover:bg-[#22c55e]/10">
+                  <CardHeader className="pb-0">
+                    <span className="text-2xl leading-none">
+                      {YOUR_WORDS.emoji}
+                    </span>
+                    <CardTitle className="mt-2 text-sm leading-snug">
+                      {YOUR_WORDS.name}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {myWords.length === 0
+                        ? "Add your own phrases"
+                        : `${myWords.length} word${myWords.length !== 1 ? "s" : ""}`}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-3">
+                    {myWords.length > 0 ? (
+                      <div className="space-y-1">
+                        <Progress
+                          value={myPct}
+                          className="h-1.5 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                        />
+                        <p className="text-right text-[10px] text-muted-foreground">
+                          {myPct}%
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-xs text-[#22c55e]">
+                        <Plus className="size-3" />
+                        Create
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
             {categoryStats.map((cat) => (
               <Link key={cat.id} href={`/learn/${cat.slug}`} className="group">
                 <Card className="h-full cursor-pointer border-[#2a2a2a] bg-[#1a1a1a] ring-0 transition-colors hover:border-[#22c55e]/40 hover:bg-[#1e1e1e]">

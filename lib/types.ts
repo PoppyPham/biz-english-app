@@ -11,8 +11,17 @@ export type Phrase = {
   phrase: string
   definition: string
   example: string
-  category_id: string
+  category_id: string | null
+  owner_id?: string | null
+  is_public?: boolean
 }
+
+// Virtual (non-DB) category used to group a user's own phrases everywhere.
+export const YOUR_WORDS = {
+  slug: "your-words",
+  name: "Your Words",
+  emoji: "⭐",
+} as const
 
 export type UserProgress = {
   id: string

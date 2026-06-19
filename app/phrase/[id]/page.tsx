@@ -5,12 +5,13 @@ import { YouGlishWidget } from "@/components/YouGlishWidget"
 import { PhraseDetailControls } from "@/components/PhraseDetailControls"
 import { UserExamples } from "@/components/UserExamples"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
-import type {
-  Category,
-  Phrase,
-  UserProgress,
-  PhraseExample,
-  UserExample,
+import {
+  YOUR_WORDS,
+  type Category,
+  type Phrase,
+  type UserProgress,
+  type PhraseExample,
+  type UserExample,
 } from "@/lib/types"
 
 export default async function PhrasePage({
@@ -28,13 +29,22 @@ export default async function PhrasePage({
   // Fetch the phrase
   const { data: phrase } = await supabase
     .from("phrases")
-    .select("id, phrase, definition, example, category_id")
+    .select("id, phrase, definition, example, category_id, owner_id, is_public")
     .eq("id", id)
     .single()
 
   if (!phrase) notFound()
 
-  // Fetch category + siblings + progress + examples in parallel
+  const p = phrase as Phrase
+  const isUserWord = p.category_id == null && p.owner_id != null
+  const isOwner = !!user && p.owner_id === user.id
+
+  // Fetch category + siblings + progress + examples in parallel.
+  // Siblings: by category for community phrases, by owner for user words.
+  const siblingsQuery = isUserWord
+    ? supabase.from("phrases").select("id").eq("owner_id", p.owner_id!).order("phrase")
+    : supabase.from("phrases").select("id").eq("category_id", p.category_id).order("phrase")
+
   const [
     { data: category },
     { data: siblings },
@@ -42,16 +52,14 @@ export default async function PhrasePage({
     { data: systemExamples },
     { data: userExamples },
   ] = await Promise.all([
-    supabase
-      .from("categories")
-      .select("id, name, slug, emoji")
-      .eq("id", (phrase as Phrase).category_id)
-      .single(),
-    supabase
-      .from("phrases")
-      .select("id")
-      .eq("category_id", (phrase as Phrase).category_id)
-      .order("phrase"),
+    p.category_id != null
+      ? supabase
+          .from("categories")
+          .select("id, name, slug, emoji")
+          .eq("id", p.category_id)
+          .single()
+      : Promise.resolve({ data: null }),
+    siblingsQuery,
     user
       ? supabase
           .from("user_progress")
@@ -85,6 +93,15 @@ export default async function PhrasePage({
   const progress = progressRow as UserProgress | null
   const cat = category as Category | null
 
+  // Where "back" goes + the label shown.
+  const backHref = isUserWord ? "/words" : cat ? `/learn/${cat.slug}` : "/"
+  const backLabel = isUserWord
+    ? `${YOUR_WORDS.emoji} ${YOUR_WORDS.name}`
+    : cat
+    ? `${cat.emoji} ${cat.name}`
+    : null
+  const showCounter = isUserWord || !!cat
+
   // Curated examples = the phrase's built-in example (if any) + phrase_examples rows.
   const curatedExamples: string[] = [
     ...((phrase as Phrase).example ? [(phrase as Phrase).example] : []),
@@ -98,20 +115,18 @@ export default async function PhrasePage({
       <div className="sticky top-0 md:top-14 z-30 border-b border-[#2a2a2a] bg-[#0f0f0f]/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 md:px-8">
           <Link
-            href={cat ? `/learn/${cat.slug}` : "/"}
+            href={backHref}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <ArrowLeft className="size-4" />
-            {cat ? (
-              <span className="hidden sm:inline">
-                {cat.emoji} {cat.name}
-              </span>
+            {backLabel ? (
+              <span className="hidden sm:inline">{backLabel}</span>
             ) : (
               <span>Back</span>
             )}
           </Link>
 
-          {cat && (
+          {showCounter && siblingIds.length > 0 && (
             <span className="text-xs text-muted-foreground">
               {currentIdx + 1} / {siblingIds.length}
             </span>
@@ -122,6 +137,19 @@ export default async function PhrasePage({
       <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 md:px-8 md:py-12">
         {/* ── Phrase heading ── */}
         <div>
+          {isOwner && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[11px] font-medium text-[#22c55e]">
+                {YOUR_WORDS.emoji} {p.is_public ? "Your word · Public" : "Your word"}
+              </span>
+              <Link
+                href="/words"
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Edit
+              </Link>
+            </div>
+          )}
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             {(phrase as Phrase).phrase}
           </h1>
@@ -237,10 +265,10 @@ export default async function PhrasePage({
             </Link>
           ) : (
             <Link
-              href={cat ? `/learn/${cat.slug}` : "/"}
+              href={backHref}
               className="flex items-center gap-2 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-4 py-2.5 text-sm text-[#22c55e] transition-colors hover:bg-[#22c55e]/20"
             >
-              Back to {cat?.name ?? "category"}
+              Back to {isUserWord ? YOUR_WORDS.name : cat?.name ?? "list"}
               <ArrowRight className="size-4 shrink-0" />
             </Link>
           )}

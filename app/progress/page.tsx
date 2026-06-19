@@ -11,7 +11,12 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react"
-import type { Category, Phrase, UserProgress } from "@/lib/types"
+import {
+  YOUR_WORDS,
+  type Category,
+  type Phrase,
+  type UserProgress,
+} from "@/lib/types"
 
 // Count consecutive activity days ending today (or yesterday — grace period).
 function computeStreak(dates: Set<string>): number {
@@ -56,7 +61,7 @@ export default async function ProgressPage() {
         .order("sort_order"),
       supabase
         .from("phrases")
-        .select("id, phrase, definition, example, category_id"),
+        .select("id, phrase, definition, example, category_id, owner_id"),
       supabase
         .from("user_progress")
         .select("id, user_id, phrase_id, status, is_favorite, updated_at")
@@ -82,19 +87,41 @@ export default async function ProgressPage() {
   )
 
   // ── Category breakdown ──
-  const breakdown = cats.map((cat) => {
-    const catPhrases = allPhrases.filter((p) => p.category_id === cat.id)
-    const total = catPhrases.length
+  function tally(phrasesSubset: Phrase[]) {
     let learned = 0
     let learning = 0
-    for (const p of catPhrases) {
+    for (const p of phrasesSubset) {
       const s = progressMap.get(p.id)?.status
       if (s === "learned") learned++
       else if (s === "learning") learning++
     }
-    const newCount = total - learned - learning
-    return { ...cat, total, learned, learning, newCount }
-  })
+    return {
+      total: phrasesSubset.length,
+      learned,
+      learning,
+      newCount: phrasesSubset.length - learned - learning,
+    }
+  }
+
+  const breakdown = cats.map((cat) => ({
+    id: String(cat.id),
+    name: cat.name,
+    emoji: cat.emoji,
+    href: `/learn/${cat.slug}`,
+    ...tally(allPhrases.filter((p) => p.category_id === cat.id)),
+  }))
+
+  // Prepend "Your Words" (user's own phrases) if they have any.
+  const myWords = allPhrases.filter((p) => p.owner_id === user.id)
+  if (myWords.length > 0) {
+    breakdown.unshift({
+      id: YOUR_WORDS.slug,
+      name: YOUR_WORDS.name,
+      emoji: YOUR_WORDS.emoji,
+      href: "/words",
+      ...tally(myWords),
+    })
+  }
 
   // ── Recently studied (last 10) ──
   const recent = progress
@@ -172,7 +199,7 @@ export default async function ProgressPage() {
               <div key={cat.id}>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
                   <Link
-                    href={`/learn/${cat.slug}`}
+                    href={cat.href}
                     className="flex items-center gap-2 hover:underline underline-offset-2"
                   >
                     <span>{cat.emoji}</span>
