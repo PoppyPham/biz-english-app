@@ -3,8 +3,15 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { YouGlishWidget } from "@/components/YouGlishWidget"
 import { PhraseDetailControls } from "@/components/PhraseDetailControls"
+import { UserExamples } from "@/components/UserExamples"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
-import type { Category, Phrase, UserProgress } from "@/lib/types"
+import type {
+  Category,
+  Phrase,
+  UserProgress,
+  PhraseExample,
+  UserExample,
+} from "@/lib/types"
 
 export default async function PhrasePage({
   params,
@@ -27,28 +34,46 @@ export default async function PhrasePage({
 
   if (!phrase) notFound()
 
-  // Fetch category + siblings + user progress in parallel
-  const [{ data: category }, { data: siblings }, { data: progressRow }] =
-    await Promise.all([
-      supabase
-        .from("categories")
-        .select("id, name, slug, emoji")
-        .eq("id", (phrase as Phrase).category_id)
-        .single(),
-      supabase
-        .from("phrases")
-        .select("id")
-        .eq("category_id", (phrase as Phrase).category_id)
-        .order("phrase"),
-      user
-        ? supabase
-            .from("user_progress")
-            .select("id, user_id, phrase_id, status, is_favorite, updated_at")
-            .eq("user_id", user.id)
-            .eq("phrase_id", id)
-            .single()
-        : Promise.resolve({ data: null }),
-    ])
+  // Fetch category + siblings + progress + examples in parallel
+  const [
+    { data: category },
+    { data: siblings },
+    { data: progressRow },
+    { data: systemExamples },
+    { data: userExamples },
+  ] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, name, slug, emoji")
+      .eq("id", (phrase as Phrase).category_id)
+      .single(),
+    supabase
+      .from("phrases")
+      .select("id")
+      .eq("category_id", (phrase as Phrase).category_id)
+      .order("phrase"),
+    user
+      ? supabase
+          .from("user_progress")
+          .select("id, user_id, phrase_id, status, is_favorite, updated_at")
+          .eq("user_id", user.id)
+          .eq("phrase_id", id)
+          .single()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("phrase_examples")
+      .select("id, phrase_id, text, sort_order")
+      .eq("phrase_id", id)
+      .order("sort_order"),
+    user
+      ? supabase
+          .from("user_examples")
+          .select("id, user_id, phrase_id, text, created_at")
+          .eq("user_id", user.id)
+          .eq("phrase_id", id)
+          .order("created_at")
+      : Promise.resolve({ data: [] }),
+  ])
 
   // Compute prev / next
   const siblingIds = (siblings ?? []).map((s: { id: string }) => s.id)
@@ -59,6 +84,13 @@ export default async function PhrasePage({
 
   const progress = progressRow as UserProgress | null
   const cat = category as Category | null
+
+  // Curated examples = the phrase's built-in example (if any) + phrase_examples rows.
+  const curatedExamples: string[] = [
+    ...((phrase as Phrase).example ? [(phrase as Phrase).example] : []),
+    ...((systemExamples ?? []) as PhraseExample[]).map((e) => e.text),
+  ]
+  const initialUserExamples = (userExamples ?? []) as UserExample[]
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -110,22 +142,47 @@ export default async function PhrasePage({
           </div>
         </section>
 
-        {/* ── Example ── */}
-        {(phrase as Phrase).example && (
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Quote className="size-4 text-[#22c55e]" />
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Example
-              </h2>
-            </div>
-            <div className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-5 py-4 space-y-2">
-              <p className="italic leading-relaxed text-foreground">
-                &ldquo;{(phrase as Phrase).example}&rdquo;
+        {/* ── Examples ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Quote className="size-4 text-[#22c55e]" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Examples
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {/* Curated / system examples */}
+            {curatedExamples.map((text, i) => (
+              <div
+                key={`sys-${i}`}
+                className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-5 py-4"
+              >
+                <p className="italic leading-relaxed text-foreground">
+                  &ldquo;{text}&rdquo;
+                </p>
+              </div>
+            ))}
+
+            {curatedExamples.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No examples yet — add your own below.
               </p>
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+
+          {/* User-contributed examples */}
+          <div className="mt-4">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Your examples
+            </p>
+            <UserExamples
+              phraseId={id}
+              userId={user?.id ?? null}
+              initial={initialUserExamples}
+            />
+          </div>
+        </section>
 
         {/* ── YouGlish ── */}
         <section>
