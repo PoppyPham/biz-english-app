@@ -2,9 +2,10 @@
 
 import { useRef, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { LogOut, ChevronDown } from "lucide-react"
+import { LogOut, ChevronDown, KeyRound } from "lucide-react"
 
 function getInitials(user: User) {
   const name: string =
@@ -63,6 +64,14 @@ export function ProfileDropdown({ user }: { user: User }) {
           <div className="px-3 py-2 border-b border-[#2a2a2a]">
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
+          <Link
+            href="/account"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-[#2a2a2a] transition-colors"
+          >
+            <KeyRound className="size-3.5" />
+            Change password
+          </Link>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-[#2a2a2a] transition-colors"
