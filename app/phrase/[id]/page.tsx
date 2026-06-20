@@ -27,12 +27,26 @@ export default async function PhrasePage({
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Fetch the phrase
-  const { data: phrase } = await supabase
-    .from("phrases")
-    .select("id, phrase, definition, example, category_id, owner_id, is_public, ipa")
-    .eq("id", id)
-    .single()
+  // Fetch the phrase. Try with the `ipa` column, but fall back gracefully if
+  // that column hasn't been migrated yet (so a missing column never 404s).
+  let phrase: Phrase | null = null
+  {
+    const withIpa = await supabase
+      .from("phrases")
+      .select("id, phrase, definition, example, category_id, owner_id, is_public, ipa")
+      .eq("id", id)
+      .single()
+    if (withIpa.data) {
+      phrase = withIpa.data as Phrase
+    } else {
+      const base = await supabase
+        .from("phrases")
+        .select("id, phrase, definition, example, category_id, owner_id, is_public")
+        .eq("id", id)
+        .single()
+      phrase = (base.data as Phrase) ?? null
+    }
+  }
 
   if (!phrase) notFound()
 

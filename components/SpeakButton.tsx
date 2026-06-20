@@ -2,6 +2,7 @@
 
 import { Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { speakText } from "@/lib/speak"
 
 /**
  * Lightweight pronounce button using the browser Web Speech API.
@@ -21,11 +22,7 @@ export function SpeakButton({
     // Don't trigger parent links/cards.
     e.preventDefault()
     e.stopPropagation()
-    if (typeof window === "undefined" || !window.speechSynthesis) return
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = lang
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
+    speakText(text, lang)
   }
 
   return (

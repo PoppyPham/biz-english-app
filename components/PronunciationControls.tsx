@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Volume2 } from "lucide-react"
 import { fetchPronunciation } from "@/lib/dictionary"
+import { speakText } from "@/lib/speak"
 
 /**
  * Shows IPA next to a phrase and a pronounce button.
@@ -34,18 +35,12 @@ export function PronunciationControls({
 
   function speak() {
     if (audioUrlRef.current) {
-      void new Audio(audioUrlRef.current).play().catch(() => speakTTS())
+      const audio = new Audio(audioUrlRef.current)
+      audio.volume = 0.85
+      void audio.play().catch(() => speakText(text))
       return
     }
-    speakTTS()
-  }
-
-  function speakTTS() {
-    if (typeof window === "undefined" || !window.speechSynthesis) return
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = "en-US"
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(u)
+    speakText(text)
   }
 
   return (
