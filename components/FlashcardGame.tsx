@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Repeat, Sparkles } from "lucide-react"
+import { Ipa } from "@/components/Ipa"
 import type { Phrase } from "@/lib/types"
 
 type Result = "learned" | "learning"
@@ -225,10 +226,16 @@ export function FlashcardGame({
             )}
           >
             {/* Front — phrase */}
-            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
+            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
+              <Ipa
+                phraseId={current.id}
+                text={current.phrase}
+                initialIpa={current.ipa}
+                className="text-sm"
+              />
               <p className="absolute bottom-5 text-xs text-muted-foreground">
                 Tap or press Space to flip
               </p>

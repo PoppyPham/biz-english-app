@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { fetchPronunciation } from "@/lib/dictionary"
+import { Ipa } from "@/components/Ipa"
 import type { Phrase } from "@/lib/types"
 
 type Draft = { phrase: string; definition: string; example: string; ipa: string }
@@ -317,6 +318,12 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
                     <p className="font-medium leading-snug group-hover:underline underline-offset-2">
                       {word.phrase}
                     </p>
+                    <Ipa
+                      phraseId={word.id}
+                      text={word.phrase}
+                      initialIpa={word.ipa}
+                      className="mt-0.5 block"
+                    />
                     <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                       {word.definition}
                     </p>

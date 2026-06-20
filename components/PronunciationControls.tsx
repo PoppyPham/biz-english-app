@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Volume2 } from "lucide-react"
 import { fetchPronunciation } from "@/lib/dictionary"
 import { speakText } from "@/lib/speak"
+import { createClient } from "@/lib/supabase/client"
 
 /**
  * Shows IPA next to a phrase and a pronounce button.
@@ -11,9 +12,11 @@ import { speakText } from "@/lib/speak"
  * Dictionary API. Audio priority: real Dictionary audio → Web Speech fallback.
  */
 export function PronunciationControls({
+  phraseId,
   text,
   initialIpa,
 }: {
+  phraseId: string | number
   text: string
   initialIpa?: string | null
 }) {
@@ -23,15 +26,27 @@ export function PronunciationControls({
   useEffect(() => {
     let cancelled = false
     // Fetch for the real audio, and for IPA if we don't already have one.
-    fetchPronunciation(text).then((res) => {
+    fetchPronunciation(text).then(async (res) => {
       if (cancelled) return
       audioUrlRef.current = res.audioUrl
-      if (!initialIpa && res.ipa) setIpa(res.ipa)
+      if (!initialIpa && res.ipa) {
+        setIpa(res.ipa)
+        // Backfill the cache so future loads read it from the DB.
+        try {
+          const supabase = createClient()
+          await supabase.rpc("set_phrase_ipa", {
+            p_id: Number(phraseId),
+            p_ipa: res.ipa,
+          })
+        } catch {
+          /* best-effort */
+        }
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [text, initialIpa])
+  }, [text, initialIpa, phraseId])
 
   function speak() {
     if (audioUrlRef.current) {

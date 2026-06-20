@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Timer,
 } from "lucide-react"
+import { Ipa } from "@/components/Ipa"
 import type { Phrase } from "@/lib/types"
 
 const QUIZ_SIZE = 20
@@ -323,6 +324,14 @@ export function QuizGame({
           <h2 className="text-2xl font-bold leading-snug md:text-3xl">
             {current.phrase.phrase}
           </h2>
+          <div className="mt-1.5">
+            <Ipa
+              phraseId={current.phrase.id}
+              text={current.phrase.phrase}
+              initialIpa={current.phrase.ipa}
+              className="text-sm"
+            />
+          </div>
         </div>
 
         {/* Options */}

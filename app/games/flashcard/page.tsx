@@ -31,9 +31,7 @@ export default async function FlashcardPage({
   }
 
   // Fetch phrases — by owner (Your Words), by category, or all.
-  let query = supabase
-    .from("phrases")
-    .select("id, phrase, definition, example, category_id")
+  let query = supabase.from("phrases").select("*")
   if (isYourWords && user) query = query.eq("owner_id", user.id)
   else if (category) query = query.eq("category_id", category.id)
   const { data: phrases } = await query

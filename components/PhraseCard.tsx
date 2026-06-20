@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { SpeakButton } from "@/components/SpeakButton"
+import { Ipa } from "@/components/Ipa"
 import type { PhraseWithProgress, UserProgress } from "@/lib/types"
 
 type Status = UserProgress["status"]
@@ -103,6 +104,12 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
           className="min-w-0 flex-1 hover:underline underline-offset-2"
         >
           <p className="font-medium leading-snug">{phrase.phrase}</p>
+          <Ipa
+            phraseId={phrase.id}
+            text={phrase.phrase}
+            initialIpa={phrase.ipa}
+            className="mt-0.5 block"
+          />
           <p className="mt-1 text-sm text-muted-foreground">{truncated}</p>
         </Link>
 

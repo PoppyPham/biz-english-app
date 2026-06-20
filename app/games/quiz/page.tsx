@@ -29,9 +29,7 @@ export default async function QuizPage({
     category = (data as Category) ?? null
   }
 
-  let query = supabase
-    .from("phrases")
-    .select("id, phrase, definition, example, category_id")
+  let query = supabase.from("phrases").select("*")
   if (isYourWords && user) query = query.eq("owner_id", user.id)
   else if (category) query = query.eq("category_id", category.id)
   const { data: phrases } = await query

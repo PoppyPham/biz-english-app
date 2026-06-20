@@ -31,7 +31,7 @@ export default async function CategoryPage({
   const [{ data: phrases }, { data: progressRows }] = await Promise.all([
     supabase
       .from("phrases")
-      .select("id, phrase, definition, example, category_id")
+      .select("*")
       .eq("category_id", (category as Category).id)
       .order("phrase"),
     user

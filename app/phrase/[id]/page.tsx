@@ -168,7 +168,11 @@ export default async function PhrasePage({
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             {(phrase as Phrase).phrase}
           </h1>
-          <PronunciationControls text={p.phrase} initialIpa={p.ipa} />
+          <PronunciationControls
+            phraseId={p.id}
+            text={p.phrase}
+            initialIpa={p.ipa}
+          />
         </div>
 
         {/* ── Definition ── */}
