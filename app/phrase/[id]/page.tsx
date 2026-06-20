@@ -3,6 +3,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { YouGlishWidget } from "@/components/YouGlishWidget"
 import { PhraseDetailControls } from "@/components/PhraseDetailControls"
+import { PronunciationControls } from "@/components/PronunciationControls"
 import { UserExamples } from "@/components/UserExamples"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
 import {
@@ -29,7 +30,7 @@ export default async function PhrasePage({
   // Fetch the phrase
   const { data: phrase } = await supabase
     .from("phrases")
-    .select("id, phrase, definition, example, category_id, owner_id, is_public")
+    .select("id, phrase, definition, example, category_id, owner_id, is_public, ipa")
     .eq("id", id)
     .single()
 
@@ -153,6 +154,7 @@ export default async function PhrasePage({
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             {(phrase as Phrase).phrase}
           </h1>
+          <PronunciationControls text={p.phrase} initialIpa={p.ipa} />
         </div>
 
         {/* ── Definition ── */}

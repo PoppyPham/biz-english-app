@@ -14,12 +14,14 @@ import {
   Globe,
   Lock,
   ArrowRight,
+  Wand2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { fetchPronunciation } from "@/lib/dictionary"
 import type { Phrase } from "@/lib/types"
 
-type Draft = { phrase: string; definition: string; example: string }
-const EMPTY: Draft = { phrase: "", definition: "", example: "" }
+type Draft = { phrase: string; definition: string; example: string; ipa: string }
+const EMPTY: Draft = { phrase: "", definition: "", example: "", ipa: "" }
 
 // Defined at module scope (NOT inside MyWordsClient) so its identity is stable
 // across renders — otherwise React remounts the form on every keystroke, which
@@ -73,6 +75,31 @@ function DraftForm({
           placeholder="A sentence using the phrase"
         />
       </Field>
+      <Field label="IPA (optional)" htmlFor="d-ipa">
+        <div className="flex gap-2">
+          <Input
+            id="d-ipa"
+            value={draft.ipa}
+            onChange={(e) => setDraft((d) => ({ ...d, ipa: e.target.value }))}
+            placeholder="/ˈbændwɪdθ/"
+            className="font-mono"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!draft.phrase.trim()}
+            onClick={async () => {
+              const { ipa } = await fetchPronunciation(draft.phrase)
+              if (ipa) setDraft((d) => ({ ...d, ipa }))
+            }}
+            className="shrink-0 gap-1"
+          >
+            <Wand2 className="size-3.5" />
+            Auto
+          </Button>
+        </div>
+      </Field>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
@@ -125,8 +152,11 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
         phrase: draft.phrase.trim(),
         definition: draft.definition.trim(),
         example: draft.example.trim(),
+        ipa: draft.ipa.trim() || null,
       })
-      .select("id, phrase, definition, example, category_id, owner_id, is_public")
+      .select(
+        "id, phrase, definition, example, category_id, owner_id, is_public, ipa"
+      )
       .single()
 
     if (insErr) {
@@ -155,6 +185,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
         phrase: draft.phrase.trim(),
         definition: draft.definition.trim(),
         example: draft.example.trim(),
+        ipa: draft.ipa.trim() || null,
       })
       .eq("id", editingId)
 
@@ -171,6 +202,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
               phrase: draft.phrase.trim(),
               definition: draft.definition.trim(),
               example: draft.example.trim(),
+              ipa: draft.ipa.trim() || null,
             }
           : w
       )
@@ -221,6 +253,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
       phrase: word.phrase,
       definition: word.definition,
       example: word.example ?? "",
+      ipa: word.ipa ?? "",
     })
   }
 

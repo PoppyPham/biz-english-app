@@ -14,6 +14,7 @@ export type Phrase = {
   category_id: string | null
   owner_id?: string | null
   is_public?: boolean
+  ipa?: string | null
 }
 
 // Virtual (non-DB) category used to group a user's own phrases everywhere.

@@ -6,6 +6,7 @@ import { Heart } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { SpeakButton } from "@/components/SpeakButton"
 import type { PhraseWithProgress, UserProgress } from "@/lib/types"
 
 type Status = UserProgress["status"]
@@ -105,23 +106,26 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
           <p className="mt-1 text-sm text-muted-foreground">{truncated}</p>
         </Link>
 
-        {userId && (
-          <button
-            onClick={handleFavorite}
-            disabled={savingFav}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            className={cn(
-              "shrink-0 rounded-md p-1 transition-colors",
-              isFavorite
-                ? "text-rose-400 hover:text-rose-300"
-                : "text-muted-foreground hover:text-rose-400"
-            )}
-          >
-            <Heart
-              className={cn("size-4", isFavorite && "fill-current")}
-            />
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          <SpeakButton text={phrase.phrase} />
+          {userId && (
+            <button
+              onClick={handleFavorite}
+              disabled={savingFav}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              className={cn(
+                "shrink-0 rounded-md p-1 transition-colors",
+                isFavorite
+                  ? "text-rose-400 hover:text-rose-300"
+                  : "text-muted-foreground hover:text-rose-400"
+              )}
+            >
+              <Heart
+                className={cn("size-4", isFavorite && "fill-current")}
+              />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Status row */}

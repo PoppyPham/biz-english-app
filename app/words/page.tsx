@@ -18,7 +18,9 @@ export default async function MyWordsPage() {
 
   const { data: words } = await supabase
     .from("phrases")
-    .select("id, phrase, definition, example, category_id, owner_id, is_public")
+    .select(
+      "id, phrase, definition, example, category_id, owner_id, is_public, ipa"
+    )
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false })
 
