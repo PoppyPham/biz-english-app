@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server"
 import { YouGlishWidget } from "@/components/YouGlishWidget"
 import { PhraseDetailControls } from "@/components/PhraseDetailControls"
 import { PronunciationControls } from "@/components/PronunciationControls"
+import { AdminIpaEditor } from "@/components/AdminIpaEditor"
 import { UserExamples } from "@/components/UserExamples"
+import { isAdmin } from "@/lib/admin"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
 import {
   YOUR_WORDS,
@@ -174,6 +176,11 @@ export default async function PhrasePage({
             initialIpa={p.ipa}
           />
         </div>
+
+        {/* Admin: edit IPA for any phrase (incl. community) */}
+        {isAdmin(user) && (
+          <AdminIpaEditor phraseId={p.id} text={p.phrase} initialIpa={p.ipa} />
+        )}
 
         {/* ── Definition ── */}
         <section>
