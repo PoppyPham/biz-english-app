@@ -21,6 +21,72 @@ import type { Phrase } from "@/lib/types"
 type Draft = { phrase: string; definition: string; example: string }
 const EMPTY: Draft = { phrase: "", definition: "", example: "" }
 
+// Defined at module scope (NOT inside MyWordsClient) so its identity is stable
+// across renders — otherwise React remounts the form on every keystroke, which
+// re-fires autoFocus and steals focus back to the first field.
+function DraftForm({
+  draft,
+  setDraft,
+  error,
+  busy,
+  editing,
+  onSubmit,
+  onCancel,
+}: {
+  draft: Draft
+  setDraft: React.Dispatch<React.SetStateAction<Draft>>
+  error: string
+  busy: boolean
+  editing: boolean
+  onSubmit: (e: React.FormEvent) => void
+  onCancel: () => void
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="space-y-3 rounded-xl border border-[#22c55e]/30 bg-[#1a1a1a] p-4"
+    >
+      <Field label="Phrase" htmlFor="d-phrase">
+        <Input
+          id="d-phrase"
+          autoFocus
+          value={draft.phrase}
+          onChange={(e) => setDraft((d) => ({ ...d, phrase: e.target.value }))}
+          placeholder="e.g. Touch base"
+        />
+      </Field>
+      <Field label="Definition" htmlFor="d-def">
+        <Input
+          id="d-def"
+          value={draft.definition}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, definition: e.target.value }))
+          }
+          placeholder="What does it mean?"
+        />
+      </Field>
+      <Field label="Example (optional)" htmlFor="d-ex">
+        <Input
+          id="d-ex"
+          value={draft.example}
+          onChange={(e) => setDraft((d) => ({ ...d, example: e.target.value }))}
+          placeholder="A sentence using the phrase"
+        />
+      </Field>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+          <X className="size-3.5" />
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={busy}>
+          {busy ? "Saving…" : editing ? "Save changes" : "Add word"}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 interface MyWordsClientProps {
   userId: string
   initial: Phrase[]
@@ -158,56 +224,19 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
     })
   }
 
-  const DraftForm = ({ onSubmit }: { onSubmit: (e: React.FormEvent) => void }) => (
-    <form
-      onSubmit={onSubmit}
-      className="space-y-3 rounded-xl border border-[#22c55e]/30 bg-[#1a1a1a] p-4"
-    >
-      <Field label="Phrase" htmlFor="d-phrase">
-        <Input
-          id="d-phrase"
-          autoFocus
-          value={draft.phrase}
-          onChange={(e) => setDraft((d) => ({ ...d, phrase: e.target.value }))}
-          placeholder="e.g. Touch base"
-        />
-      </Field>
-      <Field label="Definition" htmlFor="d-def">
-        <Input
-          id="d-def"
-          value={draft.definition}
-          onChange={(e) =>
-            setDraft((d) => ({ ...d, definition: e.target.value }))
-          }
-          placeholder="What does it mean?"
-        />
-      </Field>
-      <Field label="Example (optional)" htmlFor="d-ex">
-        <Input
-          id="d-ex"
-          value={draft.example}
-          onChange={(e) => setDraft((d) => ({ ...d, example: e.target.value }))}
-          placeholder="A sentence using the phrase"
-        />
-      </Field>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
-          <X className="size-3.5" />
-          Cancel
-        </Button>
-        <Button type="submit" size="sm" disabled={busy}>
-          {busy ? "Saving…" : editingId ? "Save changes" : "Add word"}
-        </Button>
-      </div>
-    </form>
-  )
-
   return (
     <div className="space-y-4">
       {/* Add */}
       {creating ? (
-        <DraftForm onSubmit={handleCreate} />
+        <DraftForm
+          draft={draft}
+          setDraft={setDraft}
+          error={error}
+          busy={busy}
+          editing={false}
+          onSubmit={handleCreate}
+          onCancel={resetForm}
+        />
       ) : (
         <Button
           onClick={() => {
@@ -235,7 +264,16 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
         <div className="space-y-3">
           {words.map((word) =>
             editingId === word.id ? (
-              <DraftForm key={word.id} onSubmit={handleUpdate} />
+              <DraftForm
+                key={word.id}
+                draft={draft}
+                setDraft={setDraft}
+                error={error}
+                busy={busy}
+                editing
+                onSubmit={handleUpdate}
+                onCancel={resetForm}
+              />
             ) : (
               <div
                 key={word.id}
