@@ -124,9 +124,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-y: auto;
   }
   html {
     @apply font-sans;
+    scrollbar-width: none; /* Firefox */
+  }
+  html::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
   }
 }
 

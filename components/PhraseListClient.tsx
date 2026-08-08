@@ -55,7 +55,7 @@ export function PhraseListClient({
                 <TabsTrigger
                   key={value}
                   value={value}
-                  className="h-7 rounded-md px-3 text-xs data-active:bg-[#2a2a2a] data-active:text-foreground"
+                  className="h-7 rounded-md px-3 text-xs data-active:bg-[#22c55e] data-active:text-[#0f0f0f] data-active:font-semibold"
                 >
                   {label}
                   {counts[value] > 0 && (
