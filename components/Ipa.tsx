@@ -25,7 +25,11 @@ export function Ipa({
   const [ipa, setIpa] = useState<string | null>(initialIpa ?? null)
 
   useEffect(() => {
-    if (initialIpa) return // DB already has it → no API call
+    if (initialIpa) {
+      setIpa(initialIpa) // sync when prop changes (e.g. flipping through flashcards)
+      return
+    }
+    setIpa(null)
     let cancelled = false
     fetchPronunciation(text).then(async ({ ipa: fetched }) => {
       if (cancelled || !fetched) return
