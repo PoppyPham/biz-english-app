@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import { fetchPronunciation } from "@/lib/dictionary"
 import { Ipa } from "@/components/Ipa"
+import { SpeakButton } from "@/components/SpeakButton"
 import type { Phrase } from "@/lib/types"
 
 type Draft = { phrase: string; definition: string; example: string; ipa: string }
@@ -329,6 +330,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
                     </p>
                   </Link>
                   <div className="flex shrink-0 gap-1">
+                    <SpeakButton text={word.phrase} />
                     <button
                       onClick={() => startEdit(word)}
                       aria-label="Edit"

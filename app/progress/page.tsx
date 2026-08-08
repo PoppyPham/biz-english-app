@@ -17,6 +17,8 @@ import {
   type Phrase,
   type UserProgress,
 } from "@/lib/types"
+import { Ipa } from "@/components/Ipa"
+import { SpeakButton } from "@/components/SpeakButton"
 
 // Count consecutive activity days ending today (or yesterday — grace period).
 function computeStreak(dates: Set<string>): number {
@@ -61,7 +63,7 @@ export default async function ProgressPage() {
         .order("sort_order"),
       supabase
         .from("phrases")
-        .select("id, phrase, definition, example, category_id, owner_id"),
+        .select("id, phrase, definition, example, category_id, owner_id, ipa"),
       supabase
         .from("user_progress")
         .select("id, user_id, phrase_id, status, is_favorite, updated_at")
@@ -240,28 +242,31 @@ export default async function ProgressPage() {
             </h2>
             <div className="divide-y divide-[#2a2a2a] overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]">
               {recent.map(({ progress: pr, phrase }) => (
-                <Link
+                <div
                   key={pr.id}
-                  href={`/phrase/${phrase.id}`}
                   className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[#1e1e1e]"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                    {phrase.phrase}
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                      pr.status === "learned" &&
-                        "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]",
-                      pr.status === "learning" &&
-                        "border-amber-500/40 bg-amber-500/10 text-amber-400",
-                      pr.status === "new" &&
-                        "border-[#2a2a2a] text-muted-foreground"
-                    )}
-                  >
-                    {pr.status}
-                  </span>
-                </Link>
+                  <Link href={`/phrase/${phrase.id}`} className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{phrase.phrase}</p>
+                    <Ipa phraseId={phrase.id} text={phrase.phrase} initialIpa={phrase.ipa} className="text-xs" />
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <SpeakButton text={phrase.phrase} />
+                    <span
+                      className={cn(
+                        "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                        pr.status === "learned" &&
+                          "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]",
+                        pr.status === "learning" &&
+                          "border-amber-500/40 bg-amber-500/10 text-amber-400",
+                        pr.status === "new" &&
+                          "border-[#2a2a2a] text-muted-foreground"
+                      )}
+                    >
+                      {pr.status}
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
           </section>
@@ -280,16 +285,21 @@ export default async function ProgressPage() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {favorites.map((p) => (
-                <Link
+                <div
                   key={p.id}
-                  href={`/phrase/${p.id}`}
                   className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 transition-colors hover:border-rose-500/30 hover:bg-[#1e1e1e]"
                 >
-                  <p className="font-medium leading-snug">{p.phrase}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <Link href={`/phrase/${p.id}`} className="min-w-0 flex-1">
+                      <p className="font-medium leading-snug">{p.phrase}</p>
+                      <Ipa phraseId={p.id} text={p.phrase} initialIpa={p.ipa} className="mt-0.5 block text-xs" />
+                    </Link>
+                    <SpeakButton text={p.phrase} />
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                     {p.definition}
                   </p>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -304,19 +314,22 @@ export default async function ProgressPage() {
             </h2>
             <div className="space-y-2">
               {suggestions.map((p) => (
-                <Link
+                <div
                   key={p.id}
-                  href={`/phrase/${p.id}`}
                   className="group flex items-center justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors hover:border-[#22c55e]/30 hover:bg-[#1e1e1e]"
                 >
-                  <div className="min-w-0">
+                  <Link href={`/phrase/${p.id}`} className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p.phrase}</p>
+                    <Ipa phraseId={p.id} text={p.phrase} initialIpa={p.ipa} className="text-xs" />
                     <p className="truncate text-xs text-muted-foreground">
                       {p.definition}
                     </p>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <SpeakButton text={p.phrase} />
+                    <ArrowRight className="size-4 text-muted-foreground transition-colors group-hover:text-[#22c55e]" />
                   </div>
-                  <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-[#22c55e]" />
-                </Link>
+                </div>
               ))}
             </div>
           </section>
