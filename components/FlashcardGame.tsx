@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Repeat, Sparkles } from "lucide-react"
 import { Ipa } from "@/components/Ipa"
+import { SpeakButton } from "@/components/SpeakButton"
 import type { Phrase } from "@/lib/types"
 
 type Result = "learned" | "learning"
@@ -230,12 +231,15 @@ export function FlashcardGame({
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
-              <Ipa
-                phraseId={current.id}
-                text={current.phrase}
-                initialIpa={current.ipa}
-                className="text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <Ipa
+                  phraseId={current.id}
+                  text={current.phrase}
+                  initialIpa={current.ipa}
+                  className="text-sm"
+                />
+                <SpeakButton text={current.phrase} />
+              </div>
               <p className="absolute bottom-5 text-xs text-muted-foreground">
                 Tap or press Space to flip
               </p>
