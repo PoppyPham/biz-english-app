@@ -1,10 +1,10 @@
 -- categories
 insert into public.categories (name, slug, emoji, sort_order) values
-  ('1. Giao tiếp Hàng ngày', 'daily-communication', '💬', 1),
-  ('2. Họp hành & Thảo luận', 'meetings-discussion', '🤝', 2),
-  ('3. Đàm phán & Chiến lược', 'negotiation-strategy', '⚡', 3),
-  ('4. Quản lý & Vận hành', 'management-operations', '⚙️', 4),
-  ('5. Email & Khách hàng', 'email-clients', '📧', 5);
+  ('Daily Communication', 'daily-communication', '💬', 1),
+  ('Meetings & Discussions', 'meetings-discussion', '🤝', 2),
+  ('Negotiation & Strategy', 'negotiation-strategy', '⚡', 3),
+  ('Management & Operations', 'management-operations', '⚙️', 4),
+  ('Email & Clients', 'email-clients', '📧', 5);
 
 -- phrases (category_id resolved via slug subquery)
 insert into public.phrases (id, phrase, definition, example, category_id) values

@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<Status, { label: string; activeClass: string }> = {
   },
   learned: {
     label: "Learned",
-    activeClass: "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]",
+    activeClass: "border-primary/40 bg-primary/10 text-primary",
   },
 }
 
@@ -99,7 +99,7 @@ export function PhraseDetailControls({
               "rounded-lg border px-3 py-1.5 text-sm font-medium transition-all",
               status === s
                 ? STATUS_CONFIG[s].activeClass
-                : "border-[#2a2a2a] text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
             )}
           >
             {STATUS_CONFIG[s].label}
@@ -108,7 +108,7 @@ export function PhraseDetailControls({
       </div>
 
       {/* Divider */}
-      <div className="h-6 w-px bg-[#2a2a2a]" />
+      <div className="h-6 w-px bg-border" />
 
       {/* Favorite */}
       <button
@@ -119,7 +119,7 @@ export function PhraseDetailControls({
           "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all",
           isFavorite
             ? "border-rose-500/40 bg-rose-500/10 text-rose-400"
-            : "border-[#2a2a2a] text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+            : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
         )}
       >
         <Heart className={cn("size-4", isFavorite && "fill-current")} />

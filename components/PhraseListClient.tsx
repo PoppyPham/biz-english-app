@@ -45,17 +45,17 @@ export function PhraseListClient({
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-8">
       {/* Filter tabs */}
       {userId && (
-        <div className="mb-6 overflow-x-auto">
+        <div className="mb-6 overflow-x-auto no-scrollbar">
           <Tabs
             value={filter}
             onValueChange={(v) => setFilter(v as Filter)}
           >
-            <TabsList className="h-auto gap-1 bg-[#1a1a1a] p-1 border border-[#2a2a2a]">
+            <TabsList className="h-auto gap-1 bg-card p-1 border border-border">
               {FILTERS.map(({ value, label }) => (
                 <TabsTrigger
                   key={value}
                   value={value}
-                  className="h-7 rounded-md px-3 text-xs data-active:bg-[#22c55e] data-active:text-[#0f0f0f] data-active:font-semibold"
+                  className="h-7 rounded-md px-3 text-xs data-active:bg-primary data-active:text-primary-foreground data-active:font-semibold dark:data-active:bg-primary dark:data-active:text-primary-foreground dark:data-active:border-transparent"
                 >
                   {label}
                   {counts[value] > 0 && (
@@ -81,7 +81,7 @@ export function PhraseListClient({
           {filter !== "all" && (
             <button
               onClick={() => setFilter("all")}
-              className="text-sm text-[#22c55e] hover:underline underline-offset-2"
+              className="text-sm text-primary hover:underline underline-offset-2"
             >
               View all phrases
             </button>

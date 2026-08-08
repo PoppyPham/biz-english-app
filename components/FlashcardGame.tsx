@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw, Repeat, Sparkles } from "lucide-react"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
+import { SoundToggle } from "@/components/SoundToggle"
+import { playFlip, playCorrect, playNeutral, playComplete } from "@/lib/sounds"
 import type { Phrase } from "@/lib/types"
 
 type Result = "learned" | "learning"
@@ -69,6 +71,8 @@ export function FlashcardGame({
       const phraseId = current.id
       setResults((r) => ({ ...r, [phraseId]: status }))
       void saveResult(phraseId, status)
+      if (status === "learned") playCorrect()
+      else playNeutral()
 
       if (index + 1 >= total) {
         setDone(true)
@@ -80,6 +84,10 @@ export function FlashcardGame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [current, done, index, total]
   )
+
+  useEffect(() => {
+    if (done) playComplete()
+  }, [done])
 
   function goNext() {
     if (index + 1 < total) {
@@ -101,6 +109,7 @@ export function FlashcardGame({
       if (done) return
       if (e.code === "Space") {
         e.preventDefault()
+        playFlip()
         setFlipped((f) => !f)
       } else if (e.key === "ArrowRight") {
         if (flipped) answer("learned")
@@ -127,8 +136,8 @@ export function FlashcardGame({
   // ── Loading (deck not yet shuffled) ──
   if (total === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f]">
-        <div className="size-8 animate-spin rounded-full border-2 border-[#2a2a2a] border-t-[#22c55e]" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
       </div>
     )
   }
@@ -142,14 +151,14 @@ export function FlashcardGame({
     const mastered = masteredList.length
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0f0f0f] px-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex size-16 items-center justify-center rounded-full bg-[#22c55e]/10">
-            <Sparkles className="size-8 text-[#22c55e]" />
+          <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="size-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Session complete!</h1>
           <p className="text-muted-foreground">
-            <span className="font-semibold text-[#22c55e]">{mastered}</span>{" "}
+            <span className="font-semibold text-primary">{mastered}</span>{" "}
             {mastered === 1 ? "phrase" : "phrases"} mastered today 🎉
           </p>
           {!userId && (
@@ -162,7 +171,7 @@ export function FlashcardGame({
         {/* Mini summary */}
         <div className="flex gap-6 text-sm">
           <div className="flex flex-col items-center">
-            <span className="text-xl font-bold text-[#22c55e]">{mastered}</span>
+            <span className="text-xl font-bold text-primary">{mastered}</span>
             <span className="text-xs text-muted-foreground">Got it</span>
           </div>
           <div className="flex flex-col items-center">
@@ -177,7 +186,7 @@ export function FlashcardGame({
           {missed.length > 0 && (
             <Button
               onClick={() => restart(missed)}
-              className="gap-1.5 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Repeat className="size-4" />
               Retry missed ({missed.length})
@@ -202,9 +211,9 @@ export function FlashcardGame({
   const progressPct = Math.round((index / total) * 100)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0f0f0f]">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Top bar + progress */}
-      <div className="border-b border-[#2a2a2a] px-4 py-3 md:px-8">
+      <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <Link
             href={backHref}
@@ -216,14 +225,15 @@ export function FlashcardGame({
           <span className="truncate text-sm text-muted-foreground">
             {categoryName}
           </span>
-          <span className="ml-auto shrink-0 text-sm font-medium tabular-nums">
+          <SoundToggle className="ml-auto" />
+          <span className="shrink-0 text-sm font-medium tabular-nums">
             {index + 1} / {total}
           </span>
         </div>
         <div className="mx-auto mt-2 max-w-2xl">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#2a2a2a]">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
             <div
-              className="h-full rounded-full bg-[#22c55e] transition-all duration-300"
+              className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -233,10 +243,16 @@ export function FlashcardGame({
       {/* Card area */}
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
         {/* Flip card */}
-        <div className="flip-scene w-full max-w-xl">
+        <div
+          key={current.id}
+          className="flip-scene w-full max-w-xl animate-in fade-in zoom-in-95 duration-200"
+        >
           <button
             type="button"
-            onClick={() => setFlipped((f) => !f)}
+            onClick={() => {
+              playFlip()
+              setFlipped((f) => !f)
+            }}
             aria-label="Flip card"
             className={cn(
               "flip-card aspect-[3/2] w-full cursor-pointer text-left",
@@ -244,7 +260,7 @@ export function FlashcardGame({
             )}
           >
             {/* Front — phrase + IPA + speak */}
-            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
+            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-8">
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
@@ -267,9 +283,9 @@ export function FlashcardGame({
             </div>
 
             {/* Back — definition + example */}
-            <div className="flip-face flip-face-back absolute inset-0 flex flex-col justify-center gap-4 overflow-y-auto rounded-2xl border border-[#22c55e]/30 bg-[#1a1a1a] p-8">
+            <div className="flip-face flip-face-back absolute inset-0 flex flex-col justify-center gap-4 overflow-y-auto rounded-2xl border border-primary/30 bg-card p-8">
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#22c55e]">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
                   Definition
                 </p>
                 <p className="leading-relaxed">{current.definition}</p>
@@ -323,13 +339,13 @@ export function FlashcardGame({
           <Button
             onClick={() => answer("learning")}
             variant="outline"
-            className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+            className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
           >
             Still Learning 🔄
           </Button>
           <Button
             onClick={() => answer("learned")}
-            className="flex-1 border border-[#22c55e]/40 bg-[#22c55e]/10 py-6 text-[#22c55e] hover:bg-[#22c55e]/20"
+            className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
           >
             Got it! ✅
           </Button>
@@ -337,9 +353,9 @@ export function FlashcardGame({
 
         {/* Keyboard hint */}
         <p className="text-center text-xs text-muted-foreground">
-          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">Space</kbd> flip ·{" "}
-          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">←</kbd>{" "}
-          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">→</kbd> navigate ·{" "}
+          <kbd className="rounded bg-card px-1.5 py-0.5">Space</kbd> flip ·{" "}
+          <kbd className="rounded bg-card px-1.5 py-0.5">←</kbd>{" "}
+          <kbd className="rounded bg-card px-1.5 py-0.5">→</kbd> navigate ·{" "}
           flip first to mark
         </p>
       </div>

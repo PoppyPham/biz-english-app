@@ -17,9 +17,21 @@ export function BottomNav() {
 
   if (pathname.startsWith("/auth")) return null
 
+  const activeIndex = NAV_ITEMS.findIndex(({ href }) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href)
+  )
+
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#2a2a2a] bg-[#0f0f0f] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      <div className="relative flex">
+        <span
+          className="absolute top-0 h-0.5 rounded-full bg-primary transition-[left] duration-300 ease-out"
+          style={{
+            left: `calc(${activeIndex} * (100% / ${NAV_ITEMS.length}) + 1rem)`,
+            width: `calc(100% / ${NAV_ITEMS.length} - 2rem)`,
+            opacity: activeIndex === -1 ? 0 : 1,
+          }}
+        />
         {NAV_ITEMS.map(({ href, label, Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href)
@@ -30,13 +42,10 @@ export function BottomNav() {
               className={cn(
                 "relative flex flex-1 flex-col items-center gap-1 pt-3 pb-2 text-xs transition-colors",
                 active
-                  ? "text-[#22c55e]"
+                  ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {active && (
-                <span className="absolute top-0 inset-x-4 h-0.5 rounded-full bg-[#22c55e]" />
-              )}
               <Icon className="size-5" />
               {label}
             </Link>

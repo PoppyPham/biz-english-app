@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
+import { SoundToggle } from "@/components/SoundToggle"
+import { playCorrect, playWrong, playComplete } from "@/lib/sounds"
 import type { Phrase } from "@/lib/types"
 
 const QUIZ_SIZE = 20
@@ -120,11 +122,17 @@ export function QuizGame({
       const correct =
         optionIdx !== null && current.options[optionIdx]?.correct === true
       if (correct) setScore((s) => s + 1)
+      if (correct) playCorrect()
+      else playWrong()
       void saveResult(current.phrase.id, correct)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [answered, current]
   )
+
+  useEffect(() => {
+    if (done) playComplete()
+  }, [done])
 
   // Per-question countdown
   useEffect(() => {
@@ -184,8 +192,8 @@ export function QuizGame({
   // ── Loading ──
   if (total === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f]">
-        <div className="size-8 animate-spin rounded-full border-2 border-[#2a2a2a] border-t-[#22c55e]" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
       </div>
     )
   }
@@ -204,7 +212,7 @@ export function QuizGame({
         : "Keep practicing! 💪"
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0f0f0f] px-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
         <h1 className="text-2xl font-bold tracking-tight">{message}</h1>
 
         {/* Stars */}
@@ -213,10 +221,13 @@ export function QuizGame({
             <Star
               key={i}
               className={cn(
-                "size-10 transition-colors",
+                "size-10 transition-colors animate-in zoom-in-50 fade-in duration-300",
+                i === 0 && "delay-0",
+                i === 1 && "delay-150",
+                i === 2 && "delay-300",
                 i < stars
-                  ? "fill-[#22c55e] text-[#22c55e]"
-                  : "fill-transparent text-[#2a2a2a]"
+                  ? "fill-primary text-primary"
+                  : "fill-transparent text-border"
               )}
             />
           ))}
@@ -224,7 +235,7 @@ export function QuizGame({
 
         <div className="flex flex-col items-center gap-1">
           <p className="text-4xl font-bold">
-            <span className="text-[#22c55e]">{score}</span>
+            <span className="text-primary">{score}</span>
             <span className="text-muted-foreground"> / {total}</span>
           </p>
           <p className="text-sm text-muted-foreground">{pct}% correct</p>
@@ -238,7 +249,7 @@ export function QuizGame({
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             onClick={() => share(pct, stars)}
-            className="gap-1.5 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90"
+            className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Share2 className="size-4" />
             {shareLabel}
@@ -262,9 +273,9 @@ export function QuizGame({
   const progressPct = Math.round((index / total) * 100)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0f0f0f]">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Top bar */}
-      <div className="border-b border-[#2a2a2a] px-4 py-3 md:px-8">
+      <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <Link
             href={backHref}
@@ -276,16 +287,17 @@ export function QuizGame({
           <span className="truncate text-sm text-muted-foreground">
             {categoryName}
           </span>
-          <span className="ml-auto shrink-0 text-sm font-medium tabular-nums">
-            <span className="text-[#22c55e]">{score}</span> / {total}
+          <SoundToggle className="ml-auto" />
+          <span className="shrink-0 text-sm font-medium tabular-nums">
+            <span className="text-primary">{score}</span> / {total}
           </span>
         </div>
 
         {/* Question progress */}
         <div className="mx-auto mt-2 max-w-2xl">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#2a2a2a]">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
             <div
-              className="h-full rounded-full bg-[#22c55e] transition-all duration-300"
+              className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -296,7 +308,7 @@ export function QuizGame({
       <div className="mx-auto w-full max-w-2xl px-4 pt-3 md:px-0">
         <div className="flex items-center gap-3">
           <Timer className="size-3.5 shrink-0 text-muted-foreground" />
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#1a1a1a]">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-card">
             {timerEnabled && !answered && (
               <div
                 className={cn(
@@ -351,24 +363,25 @@ export function QuizGame({
                 className={cn(
                   "flex items-center gap-3 rounded-xl border px-4 py-4 text-left text-sm transition-all",
                   !answered &&
-                    "border-[#2a2a2a] bg-[#1a1a1a] hover:border-[#3a3a3a] hover:bg-[#1e1e1e]",
+                    "border-border bg-card hover:border-border-hover hover:bg-surface-hover",
                   showCorrect &&
-                    "border-[#22c55e]/50 bg-[#22c55e]/10 text-[#22c55e]",
-                  showWrong && "border-rose-500/50 bg-rose-500/10 text-rose-400",
+                    "border-primary/50 bg-primary/10 text-primary animate-in fade-in zoom-in-95 duration-300",
+                  showWrong &&
+                    "border-rose-500/50 bg-rose-500/10 text-rose-400 animate-in fade-in duration-200 animate-shake",
                   answered &&
                     !showCorrect &&
                     !showWrong &&
-                    "border-[#2a2a2a] bg-[#1a1a1a] opacity-50"
+                    "border-border bg-card opacity-50"
                 )}
               >
                 <span
                   className={cn(
                     "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
-                    showCorrect && "border-[#22c55e] bg-[#22c55e] text-[#0f0f0f]",
+                    showCorrect && "border-primary bg-primary text-primary-foreground",
                     showWrong && "border-rose-500 bg-rose-500 text-white",
                     !showCorrect &&
                       !showWrong &&
-                      "border-[#2a2a2a] text-muted-foreground"
+                      "border-border text-muted-foreground"
                   )}
                 >
                   {showCorrect ? (
@@ -387,12 +400,12 @@ export function QuizGame({
 
         {/* Feedback + example */}
         {answered && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div
               className={cn(
                 "rounded-xl border px-4 py-3",
                 selected !== null && current.options[selected]?.correct
-                  ? "border-[#22c55e]/30 bg-[#22c55e]/5"
+                  ? "border-primary/30 bg-primary/5"
                   : "border-rose-500/30 bg-rose-500/5"
               )}
             >
@@ -412,7 +425,7 @@ export function QuizGame({
 
             <Button
               onClick={next}
-              className="w-full gap-1.5 bg-[#22c55e] py-6 text-[#0f0f0f] hover:bg-[#22c55e]/90"
+              className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
             >
               {index + 1 >= total ? "See results" : "Next"}
               <ArrowRight className="size-4" />

@@ -127,9 +127,9 @@ export default async function PhrasePage({
   const initialUserExamples = (userExamples ?? []) as UserExample[]
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       {/* Sticky top bar */}
-      <div className="sticky top-0 md:top-14 z-30 border-b border-[#2a2a2a] bg-[#0f0f0f]/95 backdrop-blur">
+      <div className="sticky top-0 md:top-14 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 md:px-8">
           <Link
             href={backHref}
@@ -156,7 +156,7 @@ export default async function PhrasePage({
         <div>
           {isOwner && (
             <div className="mb-2 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[11px] font-medium text-[#22c55e]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                 {YOUR_WORDS.emoji} {p.is_public ? "Your word · Public" : "Your word"}
               </span>
               <Link
@@ -185,12 +185,12 @@ export default async function PhrasePage({
         {/* ── Definition ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="size-4 text-[#22c55e]" />
+            <BookOpen className="size-4 text-primary" />
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Definition
             </h2>
           </div>
-          <div className="rounded-xl border-l-2 border-[#22c55e] bg-[#1a1a1a] px-5 py-4">
+          <div className="rounded-xl border-l-2 border-primary bg-card px-5 py-4">
             <p className="leading-relaxed text-foreground">
               {(phrase as Phrase).definition}
             </p>
@@ -200,7 +200,7 @@ export default async function PhrasePage({
         {/* ── Examples ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <Quote className="size-4 text-[#22c55e]" />
+            <Quote className="size-4 text-primary" />
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Examples
             </h2>
@@ -211,7 +211,7 @@ export default async function PhrasePage({
             {curatedExamples.map((text, i) => (
               <div
                 key={`sys-${i}`}
-                className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-5 py-4"
+                className="rounded-xl border border-border bg-card px-5 py-4"
               >
                 <p className="italic leading-relaxed text-foreground">
                   &ldquo;{text}&rdquo;
@@ -242,7 +242,7 @@ export default async function PhrasePage({
         {/* ── YouGlish ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <Volume2 className="size-4 text-[#22c55e]" />
+            <Volume2 className="size-4 text-primary" />
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Hear it spoken
             </h2>
@@ -255,7 +255,7 @@ export default async function PhrasePage({
 
         {/* ── Status + favorite ── */}
         {user && (
-          <section className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4">
+          <section className="rounded-xl border border-border bg-card p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Your progress
             </p>
@@ -269,11 +269,11 @@ export default async function PhrasePage({
         )}
 
         {/* ── Prev / Next navigation ── */}
-        <nav className="flex items-center justify-between gap-4 border-t border-[#2a2a2a] pt-6">
+        <nav className="flex items-center justify-between gap-4 border-t border-border pt-6">
           {prevId ? (
             <Link
               href={`/phrase/${prevId}`}
-              className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:border-[#3a3a3a] hover:text-foreground"
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground"
             >
               <ArrowLeft className="size-4 shrink-0" />
               Previous
@@ -285,7 +285,7 @@ export default async function PhrasePage({
           {nextId ? (
             <Link
               href={`/phrase/${nextId}`}
-              className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:border-[#3a3a3a] hover:text-foreground"
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground"
             >
               Next
               <ArrowRight className="size-4 shrink-0" />
@@ -293,7 +293,7 @@ export default async function PhrasePage({
           ) : (
             <Link
               href={backHref}
-              className="flex items-center gap-2 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-4 py-2.5 text-sm text-[#22c55e] transition-colors hover:bg-[#22c55e]/20"
+              className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm text-primary transition-colors hover:bg-primary/20"
             >
               Back to {isUserWord ? YOUR_WORDS.name : cat?.name ?? "list"}
               <ArrowRight className="size-4 shrink-0" />

@@ -64,7 +64,7 @@ export function PronunciationControls({
         type="button"
         onClick={speak}
         aria-label={`Pronounce "${text}"`}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:border-[#22c55e]/40 hover:text-[#22c55e]"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
       >
         <Volume2 className="size-4" />
         Listen

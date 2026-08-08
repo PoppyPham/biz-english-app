@@ -118,9 +118,9 @@ export default async function HomePage() {
     myWords.length > 0 ? Math.round((myLearned / myWords.length) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       {/* ── Hero header ── */}
-      <section className="border-b border-[#2a2a2a] px-4 py-8 md:px-8 md:py-12">
+      <section className="border-b border-border px-4 py-8 md:px-8 md:py-12">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -129,7 +129,7 @@ export default async function HomePage() {
                   <>
                     Welcome back
                     {user.user_metadata?.display_name ? (
-                      <span className="text-[#22c55e]">
+                      <span className="text-primary">
                         {", "}
                         {user.user_metadata.display_name}
                       </span>
@@ -138,7 +138,7 @@ export default async function HomePage() {
                 ) : (
                   <>
                     Master{" "}
-                    <span className="text-[#22c55e]">Business English</span>
+                    <span className="text-primary">Business English</span>
                   </>
                 )}
               </h1>
@@ -166,7 +166,7 @@ export default async function HomePage() {
             <div className="mt-5">
               <Progress
                 value={overallPct}
-                className="h-2 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                className="h-2 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
               />
             </div>
           )}
@@ -178,17 +178,17 @@ export default async function HomePage() {
         {user && hasInProgress && (
           <section>
             <div className="mb-3 flex items-center gap-2">
-              <Zap className="size-4 text-[#22c55e]" />
+              <Zap className="size-4 text-primary" />
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Continue Learning
               </h2>
             </div>
-            <Card className="border-[#2a2a2a] bg-[#1a1a1a] ring-0">
+            <Card className="border-border bg-card ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-full bg-[#22c55e]/10">
-                      <BookOpen className="size-4 text-[#22c55e]" />
+                    <div className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                      <BookOpen className="size-4 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">
@@ -230,12 +230,12 @@ export default async function HomePage() {
             {/* Your Words — only for logged-in users */}
             {user && (
               <Link href="/words" className="group">
-                <Card className="h-full cursor-pointer border-[#22c55e]/30 bg-[#22c55e]/5 ring-0 transition-colors hover:border-[#22c55e]/60 hover:bg-[#22c55e]/10">
+                <Card className="h-full cursor-pointer border-primary/30 bg-primary/5 ring-0 transition-colors hover:border-primary/60 hover:bg-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <CardHeader className="pb-0">
-                    <span className="text-2xl leading-none">
-                      {YOUR_WORDS.emoji}
-                    </span>
-                    <CardTitle className="mt-2 text-sm leading-snug">
+                    <CardTitle className="mt-2 flex items-center gap-1.5 text-sm leading-snug">
+                      <span className="text-2xl leading-none">
+                        {YOUR_WORDS.emoji}
+                      </span>
                       {YOUR_WORDS.name}
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -249,14 +249,14 @@ export default async function HomePage() {
                       <div className="space-y-1">
                         <Progress
                           value={myPct}
-                          className="h-1.5 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                          className="h-1.5 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
                         />
                         <p className="text-right text-[10px] text-muted-foreground">
                           {myPct}%
                         </p>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/50 bg-[#22c55e]/10 px-2 py-1 text-xs font-medium text-[#22c55e]">
+                      <div className="inline-flex items-center gap-1 rounded-md border border-primary/50 bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
                         <Plus className="size-3" />
                         Create
                       </div>
@@ -266,28 +266,33 @@ export default async function HomePage() {
               </Link>
             )}
 
-            {categoryStats.map((cat) => (
-              <Link key={cat.id} href={`/learn/${cat.slug}`} className="group">
-                <Card className="h-full cursor-pointer border-[#2a2a2a] bg-[#1a1a1a] ring-0 transition-colors hover:border-[#22c55e]/40 hover:bg-[#1e1e1e]">
+            {categoryStats.map((cat, i) => (
+              <Link
+                key={cat.id}
+                href={`/learn/${cat.slug}`}
+                className="group animate-in fade-in slide-in-from-bottom-2 duration-300"
+                style={{ animationDelay: `${(user ? i + 1 : i) * 40}ms` }}
+              >
+                <Card className="h-full cursor-pointer border-border bg-card ring-0 transition-colors hover:border-primary/40 hover:bg-surface-hover">
                   <CardHeader className="pb-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-2xl leading-none">{cat.emoji}</span>
-                      {user && cat.pct === 100 && (
+                    {user && cat.pct === 100 && (
+                      <div className="flex justify-end">
                         <Badge
                           variant="secondary"
-                          className="shrink-0 bg-[#22c55e]/10 text-[#22c55e] text-[10px] px-1.5"
+                          className="shrink-0 bg-primary/10 text-primary text-[10px] px-1.5"
                         >
                           Done
                         </Badge>
-                      )}
-                    </div>
-                    <CardTitle className="mt-2 text-sm leading-snug">
+                      </div>
+                    )}
+                    <CardTitle className="mt-2 flex items-center gap-1.5 text-sm leading-snug">
+                      <span className="text-2xl leading-none">{cat.emoji}</span>
                       {cat.name}
                     </CardTitle>
                     <CardDescription className="text-xs">
                       {cat.total} phrase{cat.total !== 1 ? "s" : ""}
                       {user && cat.inProgress > 0 && (
-                        <span className="ml-1 text-[#22c55e]">
+                        <span className="ml-1 text-primary">
                           · {cat.inProgress} in progress
                         </span>
                       )}
@@ -299,7 +304,7 @@ export default async function HomePage() {
                       <div className="space-y-1">
                         <Progress
                           value={cat.pct}
-                          className="h-1.5 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                          className="h-1.5 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
                         />
                         <p className="text-right text-[10px] text-muted-foreground">
                           {cat.pct}%
@@ -321,7 +326,7 @@ export default async function HomePage() {
         {/* ── Guest CTA ── */}
         {!user && (
           <section>
-            <Card className="border-[#2a2a2a] bg-[#1a1a1a] ring-0">
+            <Card className="border-border bg-card ring-0">
               <CardContent className="py-6">
                 <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left sm:justify-between">
                   <div>
@@ -330,7 +335,7 @@ export default async function HomePage() {
                       Create a free account to save your learning progress.
                     </p>
                   </div>
-                  <Button asChild className="shrink-0 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90">
+                  <Button asChild className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
                     <Link href="/auth/signup">Sign up free</Link>
                   </Button>
                 </div>

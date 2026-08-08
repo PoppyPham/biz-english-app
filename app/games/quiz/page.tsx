@@ -43,7 +43,7 @@ export default async function QuizPage({
   // Need at least 4 phrases to build a 4-option question
   if (list.length < 4) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0f0f0f] px-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
         <p className="text-4xl">🧠</p>
         <p className="text-lg font-medium">Not enough phrases for a quiz</p>
         <p className="text-sm text-muted-foreground">

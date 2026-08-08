@@ -39,6 +39,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface-hover: var(--surface-hover);
+  --color-border-hover: var(--border-hover);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -81,41 +83,45 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --surface-hover: oklch(0.97 0 0);
+  --border-hover: oklch(0.85 0 0);
 }
 
 .dark {
-  /* Brand dark theme */
-  --background: #0f0f0f;
+  /* Brand dark theme — barely-there cool-green tint, kept near-black */
+  --background: #0c100e;
   --foreground: oklch(0.985 0 0);
-  --card: #1a1a1a;
+  --card: #171c19;
   --card-foreground: oklch(0.985 0 0);
-  --popover: #1a1a1a;
+  --popover: #171c19;
   --popover-foreground: oklch(0.985 0 0);
   --primary: #22c55e;
-  --primary-foreground: #0f0f0f;
-  --secondary: #1a1a1a;
+  --primary-foreground: #0c100e;
+  --secondary: #171c19;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: #1a1a1a;
+  --muted: #171c19;
   --muted-foreground: oklch(0.556 0 0);
   --accent: #22c55e;
-  --accent-foreground: #0f0f0f;
+  --accent-foreground: #0c100e;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #2a2a2a;
-  --input: #2a2a2a;
+  --border: #272e29;
+  --input: #272e29;
   --ring: #22c55e;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #1a1a1a;
+  --sidebar: #171c19;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #0f0f0f;
-  --sidebar-accent: #2a2a2a;
+  --sidebar-primary-foreground: #0c100e;
+  --sidebar-accent: #272e29;
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: #2a2a2a;
+  --sidebar-border: #272e29;
   --sidebar-ring: #22c55e;
+  --surface-hover: #21271f;
+  --border-hover: #333c34;
 }
 
 @layer base {
@@ -125,6 +131,10 @@
   body {
     @apply bg-background text-foreground;
     overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+  body::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
   }
   html {
     @apply font-sans;
@@ -137,6 +147,12 @@
 
 /* ── Flashcard 3D flip ── */
 @layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
   .flip-scene {
     perspective: 1200px;
   }
@@ -154,5 +170,24 @@
   }
   .flip-face-back {
     transform: rotateY(180deg);
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+  .animate-shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -45,7 +45,7 @@ export default async function FlashcardPage({
   // Empty state
   if (list.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0f0f0f] px-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
         <p className="text-4xl">🃏</p>
         <p className="text-lg font-medium">No phrases to study</p>
         <p className="text-sm text-muted-foreground">

@@ -26,10 +26,10 @@ export function UserExamples({ phraseId, userId, initial }: UserExamplesProps) {
   // Guests: invite them to sign in.
   if (!userId) {
     return (
-      <p className="rounded-xl border border-dashed border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground">
         <Link
           href="/auth/login?message=Login%20to%20add%20your%20own%20examples"
-          className="text-[#22c55e] hover:underline underline-offset-2"
+          className="text-primary hover:underline underline-offset-2"
         >
           Sign in
         </Link>{" "}
@@ -92,7 +92,7 @@ export function UserExamples({ phraseId, userId, initial }: UserExamplesProps) {
       {examples.map((ex) => (
         <div
           key={ex.id}
-          className="group flex items-start justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-5 py-4"
+          className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4"
         >
           <p className="italic leading-relaxed text-foreground">
             &ldquo;{ex.text}&rdquo;
@@ -114,7 +114,7 @@ export function UserExamples({ phraseId, userId, initial }: UserExamplesProps) {
       {adding ? (
         <form
           onSubmit={handleAdd}
-          className="rounded-xl border border-[#22c55e]/30 bg-[#1a1a1a] p-3"
+          className="rounded-xl border border-primary/30 bg-card p-3"
         >
           <textarea
             autoFocus
@@ -123,7 +123,7 @@ export function UserExamples({ phraseId, userId, initial }: UserExamplesProps) {
             maxLength={500}
             rows={3}
             placeholder="Paste or type an example sentence you found…"
-            className="w-full resize-none rounded-lg border border-[#2a2a2a] bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="w-full resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-muted-foreground tabular-nums">

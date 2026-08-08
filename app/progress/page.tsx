@@ -19,6 +19,7 @@ import {
 } from "@/lib/types"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
+import { AnimatedBar } from "@/components/AnimatedBar"
 
 // Count consecutive activity days ending today (or yesterday — grace period).
 function computeStreak(dates: Set<string>): number {
@@ -146,13 +147,13 @@ export default async function ProgressPage() {
     .slice(0, 5)
 
   const statusStyles: Record<string, string> = {
-    learned: "bg-[#22c55e]",
+    learned: "bg-primary",
     learning: "bg-amber-400",
-    new: "bg-[#2a2a2a]",
+    new: "bg-border",
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 md:px-8">
         <header>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
@@ -169,25 +170,29 @@ export default async function ProgressPage() {
             icon={<GraduationCap className="size-4" />}
             label="Learned"
             value={totalLearned}
-            accent="text-[#22c55e]"
+            accent="text-primary"
+            delay={0}
           />
           <StatCard
             icon={<Heart className="size-4" />}
             label="Favorites"
             value={totalFavorites}
             accent="text-rose-400"
+            delay={75}
           />
           <StatCard
             icon={<Flame className="size-4" />}
             label="Day streak"
             value={streak}
             accent="text-amber-400"
+            delay={150}
           />
           <StatCard
             icon={<Target className="size-4" />}
             label="Complete"
             value={`${pctComplete}%`}
-            accent="text-[#22c55e]"
+            accent="text-primary"
+            delay={225}
           />
         </section>
 
@@ -197,8 +202,12 @@ export default async function ProgressPage() {
             Category breakdown
           </h2>
           <div className="space-y-4">
-            {breakdown.map((cat) => (
-              <div key={cat.id}>
+            {breakdown.map((cat, i) => (
+              <div
+                key={cat.id}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
                 <div className="mb-1.5 flex items-center justify-between text-sm">
                   <Link
                     href={cat.href}
@@ -211,7 +220,7 @@ export default async function ProgressPage() {
                     {cat.learned}/{cat.total}
                   </span>
                 </div>
-                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
+                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-card">
                   {cat.total > 0 ? (
                     <>
                       <Bar n={cat.learned} total={cat.total} cls={statusStyles.learned} />
@@ -219,7 +228,7 @@ export default async function ProgressPage() {
                       <Bar n={cat.newCount} total={cat.total} cls={statusStyles.new} />
                     </>
                   ) : (
-                    <div className="h-full w-full bg-[#1a1a1a]" />
+                    <div className="h-full w-full bg-card" />
                   )}
                 </div>
               </div>
@@ -240,11 +249,12 @@ export default async function ProgressPage() {
               <Clock className="size-3.5" />
               Recently studied
             </h2>
-            <div className="divide-y divide-[#2a2a2a] overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]">
-              {recent.map(({ progress: pr, phrase }) => (
+            <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+              {recent.map(({ progress: pr, phrase }, i) => (
                 <div
                   key={pr.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[#1e1e1e]"
+                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-hover animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <Link href={`/phrase/${phrase.id}`} className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{phrase.phrase}</p>
@@ -256,11 +266,11 @@ export default async function ProgressPage() {
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-[10px] font-medium",
                         pr.status === "learned" &&
-                          "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]",
+                          "border-primary/40 bg-primary/10 text-primary",
                         pr.status === "learning" &&
                           "border-amber-500/40 bg-amber-500/10 text-amber-400",
                         pr.status === "new" &&
-                          "border-[#2a2a2a] text-muted-foreground"
+                          "border-border text-muted-foreground"
                       )}
                     >
                       {pr.status}
@@ -279,15 +289,16 @@ export default async function ProgressPage() {
             Favorites
           </h2>
           {favorites.length === 0 ? (
-            <p className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="rounded-xl border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
               No favorites yet. Tap the ♥ on any phrase to save it here.
             </p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {favorites.map((p) => (
+              {favorites.map((p, i) => (
                 <div
                   key={p.id}
-                  className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 transition-colors hover:border-rose-500/30 hover:bg-[#1e1e1e]"
+                  className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-rose-500/30 hover:bg-surface-hover animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/phrase/${p.id}`} className="min-w-0 flex-1">
@@ -309,14 +320,15 @@ export default async function ProgressPage() {
         {suggestions.length > 0 && (
           <section>
             <h2 className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Sparkles className="size-3.5 text-[#22c55e]" />
+              <Sparkles className="size-3.5 text-primary" />
               Keep going
             </h2>
             <div className="space-y-2">
-              {suggestions.map((p) => (
+              {suggestions.map((p, i) => (
                 <div
                   key={p.id}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors hover:border-[#22c55e]/30 hover:bg-[#1e1e1e]"
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30 hover:bg-surface-hover animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <Link href={`/phrase/${p.id}`} className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p.phrase}</p>
@@ -327,7 +339,7 @@ export default async function ProgressPage() {
                   </Link>
                   <div className="flex shrink-0 items-center gap-1">
                     <SpeakButton text={p.phrase} />
-                    <ArrowRight className="size-4 text-muted-foreground transition-colors group-hover:text-[#22c55e]" />
+                    <ArrowRight className="size-4 text-muted-foreground transition-colors group-hover:text-primary" />
                   </div>
                 </div>
               ))}
@@ -346,14 +358,19 @@ function StatCard({
   label,
   value,
   accent,
+  delay = 0,
 }: {
   icon: React.ReactNode
   label: string
   value: string | number
   accent: string
+  delay?: number
 }) {
   return (
-    <div className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4">
+    <div
+      className="rounded-xl border border-border bg-card p-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className={cn("flex items-center gap-1.5", accent)}>
         {icon}
         <span className="text-xs font-medium text-muted-foreground">
@@ -367,12 +384,7 @@ function StatCard({
 
 function Bar({ n, total, cls }: { n: number; total: number; cls: string }) {
   if (n <= 0) return null
-  return (
-    <div
-      className={cn("h-full", cls)}
-      style={{ width: `${(n / total) * 100}%` }}
-    />
-  )
+  return <AnimatedBar pct={(n / total) * 100} className={cls} />
 }
 
 function LegendDot({ cls, label }: { cls: string; label: string }) {

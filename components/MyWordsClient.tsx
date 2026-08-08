@@ -48,7 +48,7 @@ function DraftForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-3 rounded-xl border border-[#22c55e]/30 bg-[#1a1a1a] p-4"
+      className="space-y-3 rounded-xl border border-primary/30 bg-card p-4"
     >
       <Field label="Phrase" htmlFor="d-phrase">
         <Input
@@ -278,7 +278,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
             resetForm()
             setCreating(true)
           }}
-          className="w-full gap-1.5 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90"
+          className="w-full gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="size-4" />
           Add a word
@@ -291,7 +291,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
 
       {/* List */}
       {words.length === 0 && !creating ? (
-        <p className="rounded-xl border border-dashed border-[#2a2a2a] bg-[#1a1a1a] px-4 py-10 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
           No words yet. Add your first phrase above — it&apos;ll appear in your
           games and progress.
         </p>
@@ -312,7 +312,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
             ) : (
               <div
                 key={word.id}
-                className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4"
+                className="rounded-xl border border-border bg-card p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/phrase/${word.id}`} className="min-w-0 flex-1 group">
@@ -348,14 +348,14 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#2a2a2a] pt-3">
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
                   <button
                     onClick={() => togglePublish(word)}
                     className={cn(
                       "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
                       word.is_public
-                        ? "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]"
-                        : "border-[#2a2a2a] text-muted-foreground hover:text-foreground"
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {word.is_public ? (

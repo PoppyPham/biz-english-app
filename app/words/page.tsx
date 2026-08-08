@@ -25,7 +25,7 @@ export default async function MyWordsPage() {
     .order("created_at", { ascending: false })
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 md:px-8">
         <Link
           href="/learn"

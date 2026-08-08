@@ -58,7 +58,7 @@ export default async function LearnPage() {
     myWords.length > 0 ? Math.round((myLearned / myWords.length) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 md:px-8">
         <header>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
@@ -73,7 +73,7 @@ export default async function LearnPage() {
           {/* Your Words — only for logged-in users */}
           {user && (
             <Link href="/words" className="group">
-              <div className="flex h-full flex-col gap-3 rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/5 p-4 transition-colors hover:border-[#22c55e]/60 hover:bg-[#22c55e]/10">
+              <div className="flex h-full flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/60 hover:bg-primary/10">
                 <span className="text-2xl leading-none">{YOUR_WORDS.emoji}</span>
                 <div className="flex-1">
                   <p className="text-sm font-medium leading-snug">
@@ -89,14 +89,14 @@ export default async function LearnPage() {
                   <div className="space-y-1">
                     <Progress
                       value={myPct}
-                      className="h-1.5 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                      className="h-1.5 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
                     />
                     <p className="text-right text-[10px] text-muted-foreground">
                       {myLearned}/{myWords.length}
                     </p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs text-[#22c55e]">
+                  <div className="flex items-center gap-1 text-xs text-primary">
                     <Plus className="size-3" />
                     Create
                   </div>
@@ -107,7 +107,7 @@ export default async function LearnPage() {
 
           {stats.map((cat) => (
             <Link key={cat.id} href={`/learn/${cat.slug}`} className="group">
-              <div className="flex h-full flex-col gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 transition-colors hover:border-[#22c55e]/40 hover:bg-[#1e1e1e]">
+              <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-surface-hover">
                 <span className="text-2xl leading-none">{cat.emoji}</span>
                 <div className="flex-1">
                   <p className="text-sm font-medium leading-snug">{cat.name}</p>
@@ -120,7 +120,7 @@ export default async function LearnPage() {
                   <div className="space-y-1">
                     <Progress
                       value={cat.pct}
-                      className="h-1.5 bg-[#2a2a2a] [&_[data-slot=progress-indicator]]:bg-[#22c55e]"
+                      className="h-1.5 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
                     />
                     <p className="text-right text-[10px] text-muted-foreground">
                       {cat.learned}/{cat.total}

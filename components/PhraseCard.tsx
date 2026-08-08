@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<
 > = {
   new: {
     label: "New",
-    className: "border-[#2a2a2a] text-muted-foreground hover:border-foreground/30",
+    className: "border-border text-muted-foreground hover:border-foreground/30",
   },
   learning: {
     label: "Learning",
@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<
   },
   learned: {
     label: "Learned",
-    className: "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20",
+    className: "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20",
   },
 }
 
@@ -96,7 +96,7 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
   }
 
   return (
-    <div className="group relative flex flex-col gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 transition-colors hover:border-[#3a3a3a]">
+    <div className="group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-border-hover">
       {/* Phrase + favorite */}
       <div className="flex items-start justify-between gap-3">
         <Link
@@ -121,7 +121,7 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
               disabled={savingFav}
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               className={cn(
-                "shrink-0 rounded-md p-1 transition-colors",
+                "shrink-0 rounded-md p-1 transition-colors transition-transform active:scale-90 hover:scale-110",
                 isFavorite
                   ? "text-rose-400 hover:text-rose-300"
                   : "text-muted-foreground hover:text-rose-400"
@@ -151,7 +151,7 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
                   "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-all",
                   status === s
                     ? STATUS_CONFIG[s].className
-                    : "border-[#2a2a2a] text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
                 )}
               >
                 {STATUS_CONFIG[s].label}

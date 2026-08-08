@@ -35,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} dark h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#0f0f0f] text-foreground">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <TopNav />
         <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+4rem)] md:pb-0">
           {children}

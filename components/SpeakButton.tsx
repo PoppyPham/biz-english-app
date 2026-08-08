@@ -31,7 +31,7 @@ export function SpeakButton({
       onClick={speak}
       aria-label={`Pronounce "${text}"`}
       className={cn(
-        "shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-[#22c55e]",
+        "shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-primary",
         className
       )}
     >

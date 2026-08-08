@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface YouGlishWidgetProps {
@@ -41,10 +42,12 @@ export function YouGlishWidget({
 }: YouGlishWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<YGWidget | null>(null)
+  const [revealed, setRevealed] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
+    if (!revealed) return
     let cancelled = false
     // Fallback: reveal the player even if onFetchDone never fires.
     const fallback = setTimeout(() => !cancelled && setLoaded(true), 2500)
@@ -92,13 +95,29 @@ export function YouGlishWidget({
       cancelled = true
       clearTimeout(fallback)
     }
-  }, [phrase, lang])
+  }, [phrase, lang, revealed])
+
+  if (!revealed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setRevealed(true)}
+        className={cn(
+          "flex w-full flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-10 text-primary transition-colors hover:bg-surface-hover",
+          className
+        )}
+      >
+        <Volume2 className="size-6" />
+        <span className="text-sm font-semibold">Hear it spoken</span>
+      </button>
+    )
+  }
 
   return (
     <div className={cn("relative w-full", className)}>
       {/* Loading / error overlay */}
       {!loaded && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border border-border bg-card">
           {failed ? (
             <div className="flex flex-col items-center gap-2 px-4 text-center">
               <p className="text-sm text-muted-foreground">
@@ -110,14 +129,14 @@ export function YouGlishWidget({
                 )}/english`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-[#22c55e] hover:underline underline-offset-2"
+                className="text-sm text-primary hover:underline underline-offset-2"
               >
                 Open on YouGlish →
               </a>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <div className="size-8 animate-spin rounded-full border-2 border-[#2a2a2a] border-t-[#22c55e]" />
+              <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
               <p className="text-xs text-muted-foreground">
                 Loading pronunciation…
               </p>

@@ -54,21 +54,20 @@ export default async function CategoryPage({
   )
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 md:top-14 z-30 border-b border-[#2a2a2a] bg-[#0f0f0f]/95 backdrop-blur">
+      <div className="sticky top-0 md:top-14 z-30 border-b border-border bg-background/95 backdrop-blur">
         {/* Row 1 — back + title */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 pt-3 pb-2 md:px-8">
           <Link
             href="/"
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors shrink-0"
           >
             <ArrowLeft className="size-4" />
             <span className="hidden sm:inline">Home</span>
           </Link>
 
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="text-xl leading-none">{(category as Category).emoji}</span>
             <h1 className="truncate text-base font-semibold">
               {(category as Category).name}
             </h1>
@@ -92,7 +91,7 @@ export default async function CategoryPage({
               Quiz
             </Link>
           </Button>
-          <Button asChild size="sm" className="gap-1.5 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90">
+          <Button asChild size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href="/words">
               <Plus className="size-3.5" />
               Add New

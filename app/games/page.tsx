@@ -27,7 +27,7 @@ export default async function GamesPage() {
   const hasMyWords = (myWordCount ?? 0) > 0
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 md:px-8">
         <header>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
@@ -42,10 +42,10 @@ export default async function GamesPage() {
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href="/games/flashcard"
-            className="group flex flex-col gap-3 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 transition-colors hover:border-[#22c55e]/40 hover:bg-[#1e1e1e]"
+            className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40 hover:bg-surface-hover"
           >
-            <div className="flex size-11 items-center justify-center rounded-xl bg-[#22c55e]/10">
-              <Layers className="size-5 text-[#22c55e]" />
+            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
+              <Layers className="size-5 text-primary" />
             </div>
             <div>
               <p className="text-lg font-semibold">Flashcards</p>
@@ -53,7 +53,7 @@ export default async function GamesPage() {
                 Flip cards, mark what you know. Self-paced review.
               </p>
             </div>
-            <span className="mt-1 flex items-center gap-1 text-sm text-[#22c55e]">
+            <span className="mt-1 flex items-center gap-1 text-sm text-primary">
               Play all
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
@@ -61,10 +61,10 @@ export default async function GamesPage() {
 
           <Link
             href="/games/quiz"
-            className="group flex flex-col gap-3 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 transition-colors hover:border-[#22c55e]/40 hover:bg-[#1e1e1e]"
+            className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40 hover:bg-surface-hover"
           >
-            <div className="flex size-11 items-center justify-center rounded-xl bg-[#22c55e]/10">
-              <ListChecks className="size-5 text-[#22c55e]" />
+            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
+              <ListChecks className="size-5 text-primary" />
             </div>
             <div>
               <p className="text-lg font-semibold">Quiz</p>
@@ -72,7 +72,7 @@ export default async function GamesPage() {
                 Multiple choice. Score points and earn stars.
               </p>
             </div>
-            <span className="mt-1 flex items-center gap-1 text-sm text-[#22c55e]">
+            <span className="mt-1 flex items-center gap-1 text-sm text-primary">
               Play all
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
@@ -88,7 +88,7 @@ export default async function GamesPage() {
             <div className="space-y-2">
               {/* Your Words row */}
               {hasMyWords && (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/5 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="text-xl leading-none">{YOUR_WORDS.emoji}</span>
                     <span className="truncate text-sm font-medium">
@@ -101,13 +101,13 @@ export default async function GamesPage() {
                   <div className="flex shrink-0 gap-2">
                     <Link
                       href={`/games/flashcard?category=${YOUR_WORDS.slug}`}
-                      className="rounded-lg border border-[#22c55e]/40 px-3 py-1.5 text-xs font-medium text-[#22c55e] transition-colors hover:bg-[#22c55e]/10"
+                      className="rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
                     >
                       Flashcards
                     </Link>
                     <Link
                       href={`/games/quiz?category=${YOUR_WORDS.slug}`}
-                      className="rounded-lg border border-[#22c55e]/40 px-3 py-1.5 text-xs font-medium text-[#22c55e] transition-colors hover:bg-[#22c55e]/10"
+                      className="rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
                     >
                       Quiz
                     </Link>
@@ -118,7 +118,7 @@ export default async function GamesPage() {
               {cats.map((cat) => (
                 <div
                   key={cat.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="text-xl leading-none">{cat.emoji}</span>
@@ -129,13 +129,13 @@ export default async function GamesPage() {
                   <div className="flex shrink-0 gap-2">
                     <Link
                       href={`/games/flashcard?category=${cat.slug}`}
-                      className="rounded-lg border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-[#22c55e]/40 hover:text-[#22c55e]"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                     >
                       Flashcards
                     </Link>
                     <Link
                       href={`/games/quiz?category=${cat.slug}`}
-                      className="rounded-lg border border-[#2a2a2a] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-[#22c55e]/40 hover:text-[#22c55e]"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                     >
                       Quiz
                     </Link>
