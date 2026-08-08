@@ -325,7 +325,7 @@ export function QuizGame({
           <h2 className="text-2xl font-bold leading-snug md:text-3xl">
             {current.phrase.phrase}
           </h2>
-          <div className="mt-1.5 flex items-center justify-center gap-2">
+          <div className="mt-1.5 flex flex-col items-center gap-1">
             <Ipa
               phraseId={current.phrase.id}
               text={current.phrase.phrase}

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, RotateCcw, Repeat, Sparkles } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw, Repeat, Sparkles } from "lucide-react"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import type { Phrase } from "@/lib/types"
@@ -81,6 +81,20 @@ export function FlashcardGame({
     [current, done, index, total]
   )
 
+  function goNext() {
+    if (index + 1 < total) {
+      setIndex((i) => i + 1)
+      setFlipped(false)
+    }
+  }
+
+  function goPrev() {
+    if (index > 0) {
+      setIndex((i) => i - 1)
+      setFlipped(false)
+    }
+  }
+
   // Keyboard support
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -90,13 +104,15 @@ export function FlashcardGame({
         setFlipped((f) => !f)
       } else if (e.key === "ArrowRight") {
         if (flipped) answer("learned")
+        else goNext()
       } else if (e.key === "ArrowLeft") {
         if (flipped) answer("learning")
+        else goPrev()
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [flipped, done, answer])
+  }, [flipped, done, answer, index, total])
 
   function restart(subset?: Phrase[]) {
     setDeck(shuffle(subset ?? phrases))
@@ -215,7 +231,8 @@ export function FlashcardGame({
       </div>
 
       {/* Card area */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-8">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
+        {/* Flip card */}
         <div className="flip-scene w-full max-w-xl">
           <button
             type="button"
@@ -226,20 +243,11 @@ export function FlashcardGame({
               flipped && "is-flipped"
             )}
           >
-            {/* Front — phrase */}
-            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
+            {/* Front — phrase only (no interactive elements inside) */}
+            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
-              <div className="flex items-center gap-2">
-                <Ipa
-                  phraseId={current.id}
-                  text={current.phrase}
-                  initialIpa={current.ipa}
-                  className="text-sm"
-                />
-                <SpeakButton text={current.phrase} />
-              </div>
               <p className="absolute bottom-5 text-xs text-muted-foreground">
                 Tap or press Space to flip
               </p>
@@ -267,6 +275,42 @@ export function FlashcardGame({
           </button>
         </div>
 
+        {/* IPA + speak — outside the flip button to avoid nested button issues */}
+        <div className="flex flex-col items-center gap-1">
+          <Ipa
+            phraseId={current.id}
+            text={current.phrase}
+            initialIpa={current.ipa}
+            className="text-sm"
+          />
+          <SpeakButton text={current.phrase} />
+        </div>
+
+        {/* Prev / Next navigation */}
+        <div className="flex w-full max-w-xl items-center justify-between">
+          <Button
+            onClick={goPrev}
+            disabled={index === 0}
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+          >
+            <ChevronLeft className="size-4" /> Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {index + 1} / {total}
+          </span>
+          <Button
+            onClick={goNext}
+            disabled={index >= total - 1}
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+          >
+            Next <ChevronRight className="size-4" />
+          </Button>
+        </div>
+
         {/* Answer buttons — only after flip */}
         <div
           className={cn(
@@ -292,9 +336,9 @@ export function FlashcardGame({
         {/* Keyboard hint */}
         <p className="text-center text-xs text-muted-foreground">
           <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">Space</kbd> flip ·{" "}
-          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">←</kbd> still
-          learning · <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">→</kbd>{" "}
-          got it
+          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">←</kbd>{" "}
+          <kbd className="rounded bg-[#1a1a1a] px-1.5 py-0.5">→</kbd> navigate ·{" "}
+          flip first to mark
         </p>
       </div>
     </div>
