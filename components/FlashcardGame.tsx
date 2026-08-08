@@ -243,11 +243,24 @@ export function FlashcardGame({
               flipped && "is-flipped"
             )}
           >
-            {/* Front — phrase only (no interactive elements inside) */}
-            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
+            {/* Front — phrase + IPA + speak */}
+            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8">
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
+              {/* stopPropagation prevents clicks here from flipping the card */}
+              <div
+                className="flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Ipa
+                  phraseId={current.id}
+                  text={current.phrase}
+                  initialIpa={current.ipa}
+                  className="text-sm"
+                />
+                <SpeakButton text={current.phrase} />
+              </div>
               <p className="absolute bottom-5 text-xs text-muted-foreground">
                 Tap or press Space to flip
               </p>
@@ -273,17 +286,6 @@ export function FlashcardGame({
               )}
             </div>
           </button>
-        </div>
-
-        {/* IPA + speak — outside the flip button to avoid nested button issues */}
-        <div className="flex flex-col items-center gap-1">
-          <Ipa
-            phraseId={current.id}
-            text={current.phrase}
-            initialIpa={current.ipa}
-            className="text-sm"
-          />
-          <SpeakButton text={current.phrase} />
         </div>
 
         {/* Prev / Next navigation */}
