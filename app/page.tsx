@@ -256,7 +256,7 @@ export default async function HomePage() {
                         </p>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 text-xs text-[#22c55e]">
+                      <div className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/50 bg-[#22c55e]/10 px-2 py-1 text-xs font-medium text-[#22c55e]">
                         <Plus className="size-3" />
                         Create
                       </div>

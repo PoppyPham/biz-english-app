@@ -3,7 +3,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { PhraseListClient } from "@/components/PhraseListClient"
 import { Button } from "@/components/ui/button"
-import { Gamepad2, ArrowLeft } from "lucide-react"
+import { Gamepad2, ArrowLeft, Brain, Plus } from "lucide-react"
 import type { Category, PhraseWithProgress, UserProgress } from "@/lib/types"
 
 export default async function CategoryPage({
@@ -57,7 +57,8 @@ export default async function CategoryPage({
     <div className="min-h-screen bg-[#0f0f0f]">
       {/* Header */}
       <div className="sticky top-0 md:top-14 z-30 border-b border-[#2a2a2a] bg-[#0f0f0f]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 md:px-8">
+        {/* Row 1 — back + title */}
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 pt-3 pb-2 md:px-8">
           <Link
             href="/"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -75,11 +76,26 @@ export default async function CategoryPage({
               {phrasesWithProgress.length} phrases
             </span>
           </div>
+        </div>
 
-          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
+        {/* Row 2 — action buttons */}
+        <div className="mx-auto flex max-w-4xl gap-2 px-4 pb-3 md:px-8">
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
             <Link href={`/games/flashcard?category=${slug}`}>
               <Gamepad2 className="size-3.5" />
-              <span className="hidden sm:inline">Flashcards</span>
+              Flashcards
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Link href={`/games/quiz?category=${slug}`}>
+              <Brain className="size-3.5" />
+              Quiz
+            </Link>
+          </Button>
+          <Button asChild size="sm" className="gap-1.5 bg-[#22c55e] text-[#0f0f0f] hover:bg-[#22c55e]/90">
+            <Link href="/words">
+              <Plus className="size-3.5" />
+              Add New
             </Link>
           </Button>
         </div>
