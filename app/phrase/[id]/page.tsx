@@ -5,6 +5,7 @@ import { YouGlishWidget } from "@/components/YouGlishWidget"
 import { PhraseDetailControls } from "@/components/PhraseDetailControls"
 import { PronunciationControls } from "@/components/PronunciationControls"
 import { AdminIpaEditor } from "@/components/AdminIpaEditor"
+import { AdminFieldEditor } from "@/components/AdminFieldEditor"
 import { UserExamples } from "@/components/UserExamples"
 import { isAdmin } from "@/lib/admin"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
@@ -195,6 +196,17 @@ export default async function PhrasePage({
               {(phrase as Phrase).definition}
             </p>
           </div>
+
+          {isAdmin(user) && (
+            <div className="mt-3">
+              <AdminFieldEditor
+                phraseId={p.id}
+                field="definition"
+                label="Definition"
+                initialValue={p.definition}
+              />
+            </div>
+          )}
         </section>
 
         {/* ── Examples ── */}
@@ -225,6 +237,18 @@ export default async function PhrasePage({
               </p>
             )}
           </div>
+
+          {isAdmin(user) && (
+            <div className="mt-3">
+              <AdminFieldEditor
+                phraseId={p.id}
+                field="example"
+                label="Primary example"
+                initialValue={p.example}
+                placeholder="An example sentence using the phrase"
+              />
+            </div>
+          )}
 
           {/* User-contributed examples */}
           <div className="mt-4">
