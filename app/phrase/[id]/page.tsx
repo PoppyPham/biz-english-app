@@ -6,6 +6,7 @@ import { PhraseDetailControls } from "@/components/PhraseDetailControls"
 import { PronunciationControls } from "@/components/PronunciationControls"
 import { AdminIpaEditor } from "@/components/AdminIpaEditor"
 import { AdminFieldEditor } from "@/components/AdminFieldEditor"
+import { ExampleQuote } from "@/components/ExampleQuote"
 import { UserExamples } from "@/components/UserExamples"
 import { isAdmin } from "@/lib/admin"
 import { ArrowLeft, ArrowRight, Volume2, BookOpen, Quote } from "lucide-react"
@@ -225,9 +226,7 @@ export default async function PhrasePage({
                 key={`sys-${i}`}
                 className="rounded-xl border border-border bg-card px-5 py-4"
               >
-                <p className="italic leading-relaxed text-foreground">
-                  &ldquo;{text}&rdquo;
-                </p>
+                <ExampleQuote text={text} />
               </div>
             ))}
 

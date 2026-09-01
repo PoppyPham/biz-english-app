@@ -19,6 +19,7 @@ import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
 import { playCorrect, playWrong, playComplete } from "@/lib/sounds"
+import { ExampleQuote } from "@/components/ExampleQuote"
 import type { Phrase } from "@/lib/types"
 
 const QUIZ_SIZE = 20
@@ -417,9 +418,11 @@ export function QuizGame({
                   : "✗ Not quite."}
               </p>
               {current.phrase.example && (
-                <p className="mt-1 text-sm italic text-muted-foreground">
-                  &ldquo;{current.phrase.example}&rdquo;
-                </p>
+                <ExampleQuote
+                  text={current.phrase.example}
+                  className="mt-1"
+                  lineClassName="text-sm italic text-muted-foreground"
+                />
               )}
             </div>
 

@@ -10,6 +10,7 @@ import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
 import { playFlip, playCorrect, playNeutral, playComplete } from "@/lib/sounds"
+import { ExampleQuote } from "@/components/ExampleQuote"
 import type { Phrase } from "@/lib/types"
 
 type Result = "learned" | "learning"
@@ -295,9 +296,10 @@ export function FlashcardGame({
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Example
                   </p>
-                  <p className="italic leading-relaxed text-muted-foreground">
-                    &ldquo;{current.example}&rdquo;
-                  </p>
+                  <ExampleQuote
+                    text={current.example}
+                    lineClassName="italic leading-relaxed text-muted-foreground"
+                  />
                 </div>
               )}
             </div>

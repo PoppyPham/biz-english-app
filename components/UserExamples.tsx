@@ -5,6 +5,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, X } from "lucide-react"
+import { ExampleQuote } from "@/components/ExampleQuote"
 import { MAX_USER_EXAMPLES, type UserExample } from "@/lib/types"
 
 interface UserExamplesProps {
@@ -94,9 +95,7 @@ export function UserExamples({ phraseId, userId, initial }: UserExamplesProps) {
           key={ex.id}
           className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4"
         >
-          <p className="italic leading-relaxed text-foreground">
-            &ldquo;{ex.text}&rdquo;
-          </p>
+          <ExampleQuote text={ex.text} className="min-w-0 flex-1" />
           <button
             onClick={() => handleDelete(ex.id)}
             disabled={deletingId === ex.id}
