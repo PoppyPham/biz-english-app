@@ -433,10 +433,10 @@ export function FlashcardGame({
               total in {categoryName}
             </p>
 
-            {/* Reward burst toast — anchored 20px below this bar, never
+            {/* Reward burst toast — anchored 25px above this bar, never
                 overlapping it, regardless of where the bar sits on screen. */}
             {showBurst && (
-              <div className="pointer-events-none absolute inset-x-0 top-full z-30 mt-5 flex justify-center">
+              <div className="pointer-events-none absolute inset-x-0 bottom-full z-30 mb-[25px] flex justify-center">
                 {burstBadge}
               </div>
             )}
