@@ -35,12 +35,19 @@ interface FlashcardGameProps {
   initialProgress: Pick<UserProgress, "phrase_id" | "status">[]
 }
 
+// After "Got it", the card auto-advances once the definition/example has
+// been shown for this long — enough time to actually read it.
+const GOT_IT_READING_MS = 7000
+
 // Scale the example text down as it gets longer, so a long example still
 // fits on screen instead of getting cramped against the floating controls.
 function exampleSizeClass(text: string | null | undefined): string {
   const len = text?.length ?? 0
-  if (len > 220) return "text-xs"
-  if (len > 140) return "text-sm"
+  // Most examples pair an English sentence with a Vietnamese translation,
+  // which adds up fast inside the card's fixed, fairly short height — so
+  // scale down early rather than only for the extreme cases.
+  if (len > 180) return "text-xs"
+  if (len > 50) return "text-sm"
   return "text-base"
 }
 
@@ -158,10 +165,9 @@ export function FlashcardGame({
     setProgressMap((m) => ({ ...m, [current.id]: "learned" }))
     void saveResult(current.id, "learned")
 
-    // Say the word first, then celebrate — so the reward doesn't talk over
-    // the pronunciation. Once the burst finishes, move on automatically
-    // (the user can still flip to peek or hit Next early; either cancels
-    // this pending advance).
+    // Say the word first, then celebrate, then reveal the definition/example
+    // so there's something to read while the auto-advance timer runs (the
+    // user can still flip back or hit Next early; either cancels it).
     speakText(current.phrase, "en-US", () => {
       playCelebrate()
       popupKey.current += 1
@@ -170,7 +176,10 @@ export function FlashcardGame({
       if (burstTimeout.current) clearTimeout(burstTimeout.current)
       burstTimeout.current = setTimeout(() => {
         setShowBurst(false)
-        goToIndex(index + 1)
+        setFlipped(true)
+        burstTimeout.current = setTimeout(() => {
+          goToIndex(index + 1)
+        }, GOT_IT_READING_MS)
       }, 1100)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -551,8 +560,11 @@ export function FlashcardGame({
               </div>
 
               {/* Back — definition + example (only reached via "Still Learning" or the rotate button) */}
-              <div className="flip-face flip-face-back absolute inset-0 flex flex-col rounded-2xl border border-primary/30 bg-card p-6 md:p-8">
-                <div className="flex-1 overflow-y-auto pb-14">
+              <div className="flip-face flip-face-back absolute inset-0 rounded-2xl border border-primary/30 bg-card">
+                {/* Scroll region is inset from the bottom edge (not just
+                    padded) so its clipped viewport never reaches under the
+                    floating controls, at any scroll position. */}
+                <div className="absolute inset-x-6 top-6 bottom-16 overflow-y-auto md:inset-x-8 md:top-8">
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
                     Definition
                   </p>
