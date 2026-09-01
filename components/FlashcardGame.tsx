@@ -328,40 +328,38 @@ export function FlashcardGame({
   // ── Active game ──
   const sessionPct = Math.round((index / total) * 100)
 
+  // Reward badge content for the "memorized" burst — shared between the two
+  // anchor points below (relative to the overall progress bar when it's
+  // shown, or standalone for guests who don't have one).
+  const burstBadge = showBurst && (
+    <div className="relative flex flex-col items-center gap-0.5 rounded-2xl border border-primary/30 bg-card/95 px-6 py-3 shadow-xl backdrop-blur animate-pop-in">
+      <span className="absolute top-4 size-20 rounded-full bg-primary/30 animate-burst-ring" />
+      <div className="relative flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+        <PartyPopper className="size-6" />
+      </div>
+      <p className="relative text-2xl font-extrabold text-primary">
+        {progressStats.learned}
+      </p>
+      <p className="relative text-[11px] font-semibold uppercase tracking-wider text-primary/80">
+        memorized!
+      </p>
+      {[0, 60, 120, 180, 240, 300].map((deg) => (
+        <span
+          key={deg}
+          className="absolute top-4 size-1.5 rounded-full bg-primary animate-sparkle-out"
+          style={
+            {
+              "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 60)}px`,
+              "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 60)}px`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  )
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Reward burst toast — fixed to the very top of the viewport (not
-          nested inside the progress bar / card layout) so it can never
-          overlap either, on any screen size. */}
-      {showBurst && (
-        <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
-          <div className="relative flex flex-col items-center gap-0.5 rounded-2xl border border-primary/30 bg-card/95 px-6 py-3 shadow-xl backdrop-blur animate-pop-in">
-            <span className="absolute top-4 size-20 rounded-full bg-primary/30 animate-burst-ring" />
-            <div className="relative flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-              <PartyPopper className="size-6" />
-            </div>
-            <p className="relative text-2xl font-extrabold text-primary">
-              {progressStats.learned}
-            </p>
-            <p className="relative text-[11px] font-semibold uppercase tracking-wider text-primary/80">
-              memorized!
-            </p>
-            {[0, 60, 120, 180, 240, 300].map((deg) => (
-              <span
-                key={deg}
-                className="absolute top-4 size-1.5 rounded-full bg-primary animate-sparkle-out"
-                style={
-                  {
-                    "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 60)}px`,
-                    "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 60)}px`,
-                  } as React.CSSProperties
-                }
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Top bar + progress */}
       <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -391,12 +389,12 @@ export function FlashcardGame({
       </div>
 
       {/* Card area */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
         {/* Overall memorized-so-far bar — the "excitement about progress" HUD.
             Lives in the main content area (not the cramped top bar) so it has
             room to breathe at a readable size. */}
         {userId && progressStats.total > 0 && (
-          <div className="w-full max-w-xl">
+          <div className="relative w-full max-w-xl">
             <div className="relative flex h-3.5 w-full overflow-hidden rounded-full bg-card">
               {progressStats.learned > 0 && (
                 <div
@@ -434,6 +432,22 @@ export function FlashcardGame({
               </span>{" "}
               total in {categoryName}
             </p>
+
+            {/* Reward burst toast — anchored 20px below this bar, never
+                overlapping it, regardless of where the bar sits on screen. */}
+            {showBurst && (
+              <div className="pointer-events-none absolute inset-x-0 top-full z-30 mt-5 flex justify-center">
+                {burstBadge}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Guests without the progress bar still get the reward toast —
+            shown at the top of the card wrapper instead. */}
+        {showBurst && !(userId && progressStats.total > 0) && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-4">
+            {burstBadge}
           </div>
         )}
 
