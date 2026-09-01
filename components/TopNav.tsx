@@ -3,8 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { ProfileDropdown } from "@/components/ProfileDropdown"
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/learn", label: "Learn" },
+  { href: "/", label: "Dashboard" },
   { href: "/games", label: "Games" },
   { href: "/progress", label: "Progress" },
 ]

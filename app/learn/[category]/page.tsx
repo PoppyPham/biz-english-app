@@ -68,7 +68,7 @@ export default async function CategoryPage({
             className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors shrink-0"
           >
             <ArrowLeft className="size-4" />
-            <span className="hidden sm:inline">Home</span>
+            <span className="hidden sm:inline">Dashboard</span>
           </Link>
 
           <div className="flex min-w-0 flex-1 items-center gap-2">

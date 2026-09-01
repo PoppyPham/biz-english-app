@@ -36,11 +36,11 @@ export default async function CategoriesPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 md:px-8">
         <Link
-          href="/learn"
+          href="/"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="size-4" />
-          Learn
+          Dashboard
         </Link>
 
         <header>

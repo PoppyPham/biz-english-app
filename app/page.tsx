@@ -124,6 +124,9 @@ export default async function HomePage() {
         <div className="mx-auto max-w-4xl">
           <div className="flex items-start justify-between gap-4">
             <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Learning Dashboard
+              </p>
               <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
                 {user ? (
                   <>
@@ -201,7 +204,10 @@ export default async function HomePage() {
                     </div>
                   </div>
                   <Button asChild size="sm">
-                    <Link href="/learn" className="gap-1.5">
+                    <Link
+                      href={`/phrase/${inProgressPhrases[0].phrase_id}`}
+                      className="gap-1.5"
+                    >
                       Resume
                       <ArrowRight className="size-3.5" />
                     </Link>
