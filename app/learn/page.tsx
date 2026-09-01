@@ -135,6 +135,20 @@ export default async function LearnPage() {
               </div>
             </Link>
           ))}
+
+          {/* New category tile */}
+          {user && (
+            <Link href="/categories" className="group">
+              <div className="flex h-full min-h-[7rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/50 p-4 text-center transition-colors hover:border-primary/50 hover:bg-card">
+                <div className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                  <Plus className="size-4 text-primary" />
+                </div>
+                <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                  New category
+                </p>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </div>

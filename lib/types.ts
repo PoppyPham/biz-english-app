@@ -4,7 +4,12 @@ export type Category = {
   slug: string
   emoji: string
   sort_order: number
+  owner_id?: string | null
+  is_public?: boolean
 }
+
+// Free-tier limit on how many categories a normal user can create.
+export const FREE_CATEGORY_LIMIT = 5
 
 export type Phrase = {
   id: string

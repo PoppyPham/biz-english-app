@@ -2,8 +2,9 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { PhraseListClient } from "@/components/PhraseListClient"
+import { AddWordToCategory } from "@/components/AddWordToCategory"
 import { Button } from "@/components/ui/button"
-import { Gamepad2, ArrowLeft, Brain, Plus } from "lucide-react"
+import { Gamepad2, ArrowLeft, Brain, Plus, Settings, Globe } from "lucide-react"
 import type { Category, PhraseWithProgress, UserProgress } from "@/lib/types"
 
 export default async function CategoryPage({
@@ -21,11 +22,14 @@ export default async function CategoryPage({
   // Fetch category
   const { data: category } = await supabase
     .from("categories")
-    .select("id, name, slug, emoji, sort_order")
+    .select("id, name, slug, emoji, sort_order, owner_id, is_public")
     .eq("slug", slug)
     .single()
 
   if (!category) notFound()
+
+  const cat = category as Category
+  const isOwner = !!user && cat.owner_id === user.id
 
   // Fetch phrases + progress in parallel
   const [{ data: phrases }, { data: progressRows }] = await Promise.all([
@@ -68,9 +72,14 @@ export default async function CategoryPage({
           </Link>
 
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h1 className="truncate text-base font-semibold">
-              {(category as Category).name}
-            </h1>
+            <span className="shrink-0 text-lg leading-none">{cat.emoji}</span>
+            <h1 className="truncate text-base font-semibold">{cat.name}</h1>
+            {isOwner && cat.is_public && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                <Globe className="size-3" />
+                Public
+              </span>
+            )}
             <span className="shrink-0 text-xs text-muted-foreground">
               {phrasesWithProgress.length} phrases
             </span>
@@ -78,7 +87,7 @@ export default async function CategoryPage({
         </div>
 
         {/* Row 2 — action buttons */}
-        <div className="mx-auto flex max-w-4xl gap-2 px-4 pb-3 md:px-8">
+        <div className="mx-auto flex max-w-4xl flex-wrap gap-2 px-4 pb-3 md:px-8">
           <Button asChild size="sm" variant="outline" className="gap-1.5">
             <Link href={`/games/flashcard?category=${slug}`}>
               <Gamepad2 className="size-3.5" />
@@ -91,14 +100,37 @@ export default async function CategoryPage({
               Quiz
             </Link>
           </Button>
-          <Button asChild size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/words">
-              <Plus className="size-3.5" />
-              Add New
-            </Link>
-          </Button>
+
+          {isOwner ? (
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href="/categories">
+                <Settings className="size-3.5" />
+                <span className="hidden sm:inline">Manage</span>
+              </Link>
+            </Button>
+          ) : (
+            user && (
+              <Button
+                asChild
+                size="sm"
+                className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Link href="/words">
+                  <Plus className="size-3.5" />
+                  Add New
+                </Link>
+              </Button>
+            )
+          )}
         </div>
       </div>
+
+      {/* Owner: add a word to this category */}
+      {isOwner && (
+        <div className="mx-auto max-w-4xl px-4 pt-4 md:px-8">
+          <AddWordToCategory categoryId={cat.id} userId={user!.id} />
+        </div>
+      )}
 
       {/* Interactive list */}
       <PhraseListClient
