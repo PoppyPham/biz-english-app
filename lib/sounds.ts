@@ -134,18 +134,59 @@ export function playGameOver() {
   })
 }
 
+/** A short filtered-noise "clap" — building block for a light applause swell. */
+function clap(startTime: number) {
+  if (!isSoundEnabled()) return
+  const audio = getCtx()
+  if (!audio) return
+
+  const dur = 0.05
+  const sampleRate = audio.sampleRate
+  const buffer = audio.createBuffer(1, Math.floor(sampleRate * dur), sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+
+  const src = audio.createBufferSource()
+  src.buffer = buffer
+
+  const bandpass = audio.createBiquadFilter()
+  bandpass.type = "bandpass"
+  bandpass.frequency.value = 2200 + Math.random() * 1500
+  bandpass.Q.value = 1
+
+  const amp = audio.createGain()
+  amp.gain.setValueAtTime(0, startTime)
+  amp.gain.linearRampToValueAtTime(0.11, startTime + 0.005)
+  amp.gain.exponentialRampToValueAtTime(0.0001, startTime + dur)
+
+  src.connect(bandpass).connect(amp).connect(audio.destination)
+  src.start(startTime)
+  src.stop(startTime + dur + 0.01)
+}
+
 /**
- * Bright, satisfying "mastered it!" chime for marking a flashcard as
- * memorized — bigger than playCorrect, sparkles at the end.
+ * Big "ta-da!" celebration — bright fanfare chord + sparkle flourish + a
+ * light burst of applause. Used for the flashcard "memorized" reward, where
+ * the moment should feel like a genuine prize, not just a chime.
  */
-export function playMemorized() {
+export function playCelebrate() {
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
-  tone(659.25, t, 0.1, { gain: 0.17 }) // E5
-  tone(830.61, t + 0.07, 0.12, { gain: 0.18 }) // G#5
-  tone(1046.5, t + 0.15, 0.24, { gain: 0.19 }) // C6
-  tone(1567.98, t + 0.18, 0.3, { gain: 0.09, glideTo: 2093 }) // sparkle tail
+
+  // Ta-da! — bright major-chord stab
+  tone(523.25, t, 0.14, { type: "triangle", gain: 0.2 }) // C5
+  tone(659.25, t, 0.14, { type: "triangle", gain: 0.2 }) // E5
+  tone(783.99, t, 0.18, { type: "triangle", gain: 0.22 }) // G5
+  tone(1046.5, t + 0.06, 0.32, { gain: 0.2, glideTo: 1318.51 }) // C6 ring, glides up
+
+  // sparkle flourish
+  ;[1567.98, 1864.66, 2093, 2489.02].forEach((freq, i) => {
+    tone(freq, t + 0.18 + i * 0.05, 0.12, { gain: 0.08 })
+  })
+
+  // light round of applause
+  for (let i = 0; i < 7; i++) clap(t + 0.08 + Math.random() * 0.35)
 }
 
 /** Big celebratory fanfare for beating a high score. */

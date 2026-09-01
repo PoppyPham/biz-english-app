@@ -19,7 +19,7 @@ import {
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
-import { playMemorized, playNeutral, playComplete } from "@/lib/sounds"
+import { playCelebrate, playNeutral, playComplete } from "@/lib/sounds"
 import { speakText } from "@/lib/speak"
 import { ExampleQuote } from "@/components/ExampleQuote"
 import type { Phrase, UserProgress } from "@/lib/types"
@@ -154,7 +154,7 @@ export function FlashcardGame({
     // (the user can still flip to peek or hit Next early; either cancels
     // this pending advance).
     speakText(current.phrase, "en-US", () => {
-      playMemorized()
+      playCelebrate()
       popupKey.current += 1
       setMemorizedPopup(popupKey.current)
       setShowBurst(true)
@@ -330,6 +330,38 @@ export function FlashcardGame({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Reward burst toast — fixed to the very top of the viewport (not
+          nested inside the progress bar / card layout) so it can never
+          overlap either, on any screen size. */}
+      {showBurst && (
+        <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+          <div className="relative flex flex-col items-center gap-0.5 rounded-2xl border border-primary/30 bg-card/95 px-6 py-3 shadow-xl backdrop-blur animate-pop-in">
+            <span className="absolute top-4 size-20 rounded-full bg-primary/30 animate-burst-ring" />
+            <div className="relative flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+              <PartyPopper className="size-6" />
+            </div>
+            <p className="relative text-2xl font-extrabold text-primary">
+              {progressStats.learned}
+            </p>
+            <p className="relative text-[11px] font-semibold uppercase tracking-wider text-primary/80">
+              memorized!
+            </p>
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <span
+                key={deg}
+                className="absolute top-4 size-1.5 rounded-full bg-primary animate-sparkle-out"
+                style={
+                  {
+                    "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 60)}px`,
+                    "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 60)}px`,
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top bar + progress */}
       <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -405,36 +437,7 @@ export function FlashcardGame({
           </div>
         )}
 
-        {/* Wrapper — burst renders above this, outside the card */}
         <div className="relative w-full max-w-xl">
-          {/* Big reward-style burst — floats ABOVE the card, never covers the word */}
-          {showBurst && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 mb-3 flex flex-col items-center gap-0.5">
-              <span className="absolute top-4 size-20 rounded-full bg-primary/30 animate-burst-ring" />
-              <div className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg animate-pop-in">
-                <PartyPopper className="size-7" />
-              </div>
-              <p className="relative animate-pop-in text-3xl font-extrabold text-primary">
-                {progressStats.learned}
-              </p>
-              <p className="relative text-[11px] font-semibold uppercase tracking-wider text-primary/80">
-                memorized!
-              </p>
-              {[0, 60, 120, 180, 240, 300].map((deg) => (
-                <span
-                  key={deg}
-                  className="absolute top-4 size-1.5 rounded-full bg-primary animate-sparkle-out"
-                  style={
-                    {
-                      "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 70)}px`,
-                      "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 70)}px`,
-                    } as React.CSSProperties
-                  }
-                />
-              ))}
-            </div>
-          )}
-
           {/* Flip card */}
           <div
             key={current.id}
