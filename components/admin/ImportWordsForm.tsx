@@ -37,6 +37,8 @@ function normalize(text: string) {
 
 export function ImportWordsForm({ categories }: ImportWordsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const systemCategories = categories.filter((c) => !c.owner_id)
+  const myCategories = categories.filter((c) => !!c.owner_id)
 
   const [categoryId, setCategoryId] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
@@ -131,6 +133,13 @@ export function ImportWordsForm({ categories }: ImportWordsFormProps) {
     setImporting(true)
     setResult(null)
 
+    // Imported phrases inherit the target category's ownership: null (i.e.
+    // community) for a system category, or the admin's own id when importing
+    // into one of their own categories — matching how words added one-by-one
+    // via "Add word" on a category page are owned.
+    const targetCategory = categories.find((c) => String(c.id) === categoryId)
+    const ownerId = targetCategory?.owner_id ?? null
+
     // Optionally auto-fill missing IPA before insert. The dictionary helper
     // already caches + queues concurrency, so mapping over all rows is safe.
     let toInsert = preview.toImport
@@ -157,7 +166,7 @@ export function ImportWordsForm({ categories }: ImportWordsFormProps) {
         .from("phrases")
         .insert(
           chunk.map((r) => ({
-            owner_id: null,
+            owner_id: ownerId,
             category_id: Number(categoryId),
             is_public: false,
             phrase: r.phrase,
@@ -196,7 +205,7 @@ export function ImportWordsForm({ categories }: ImportWordsFormProps) {
   return (
     <div className="space-y-5">
       {/* Step 1 — category */}
-      <Field label="Target system category" htmlFor="import-category">
+      <Field label="Target category" htmlFor="import-category">
         <select
           id="import-category"
           value={categoryId}
@@ -204,11 +213,24 @@ export function ImportWordsForm({ categories }: ImportWordsFormProps) {
           className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus-visible:outline-none focus-visible:border-ring dark:bg-input/30"
         >
           <option value="">Select a category…</option>
-          {categories.map((c) => (
-            <option key={c.id} value={String(c.id)}>
-              {c.emoji} {c.name}
-            </option>
-          ))}
+          {systemCategories.length > 0 && (
+            <optgroup label="System categories">
+              {systemCategories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.emoji} {c.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {myCategories.length > 0 && (
+            <optgroup label="My categories">
+              {myCategories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.emoji} {c.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </Field>
 
