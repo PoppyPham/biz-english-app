@@ -23,6 +23,45 @@ function getCtx(): AudioContext | null {
   return ctx
 }
 
+// iOS Safari only allows an AudioContext to actually produce sound if it was
+// created/resumed synchronously inside a real user-gesture event (tap,
+// click, key press) — not from a setTimeout/setInterval callback. The quiz
+// timer auto-submits an answer when time runs out, and if THAT happens to
+// be the very first sound triggered in a session, the shared AudioContext
+// gets created outside any gesture and silently never works again, even
+// though later taps call resume() on it. Priming it eagerly on the first
+// real interaction anywhere on the page (which almost always precedes any
+// timer-driven sound) avoids that trap entirely.
+let primed = false
+function primeAudioContext() {
+  if (primed) return
+  const audio = getCtx()
+  if (!audio) return
+  primed = true
+  try {
+    // Actually playing a silent buffer (not just resume()) is the belt-
+    // and-suspenders unlock older WebKit versions need.
+    const buffer = audio.createBuffer(1, 1, 22050)
+    const src = audio.createBufferSource()
+    src.buffer = buffer
+    src.connect(audio.destination)
+    src.start(0)
+  } catch {
+    // Non-fatal — resume() above already ran.
+  }
+}
+
+if (typeof window !== "undefined") {
+  const unlockEvents = ["touchend", "mousedown", "keydown"] as const
+  const onFirstInteraction = () => {
+    primeAudioContext()
+    unlockEvents.forEach((e) => window.removeEventListener(e, onFirstInteraction))
+  }
+  unlockEvents.forEach((e) =>
+    window.addEventListener(e, onFirstInteraction, { passive: true })
+  )
+}
+
 function tone(
   freq: number,
   startTime: number,
@@ -46,23 +85,6 @@ function tone(
   osc.connect(amp).connect(audio.destination)
   osc.start(startTime)
   osc.stop(startTime + duration + 0.02)
-}
-
-/** Cheerful two-note rising chime for a correct answer. */
-export function playCorrect() {
-  const audio = getCtx()
-  if (!audio) return
-  const t = audio.currentTime
-  tone(523.25, t, 0.12, { gain: 0.16 }) // C5
-  tone(783.99, t + 0.09, 0.18, { gain: 0.18 }) // G5
-}
-
-/** Soft low buzz for a wrong answer — noticeable but not harsh. */
-export function playWrong() {
-  const audio = getCtx()
-  if (!audio) return
-  const t = audio.currentTime
-  tone(180, t, 0.22, { type: "triangle", gain: 0.14, glideTo: 110 })
 }
 
 /** Soft neutral tone for a non-punishing "still learning" self-assessment. */
@@ -91,8 +113,9 @@ export function playComplete() {
 
 /**
  * Correct-answer chime that gets brighter/higher as a streak grows — the
- * "combo" hit. Pitch climbs with the streak (capped) so a hot streak
- * audibly feels more exciting than a single correct answer.
+ * "combo" hit. A three-note ascending hit with a glide on the last note so
+ * a single correct answer already feels satisfying, with extra sparkle and
+ * a couple of claps layered on for a hot streak.
  */
 export function playStreak(streak: number) {
   const audio = getCtx()
@@ -100,18 +123,30 @@ export function playStreak(streak: number) {
   const t = audio.currentTime
   const tier = Math.min(streak, 12)
   const base = 523.25 * Math.pow(2, tier / 24) // climbs up to ~1 octave
-  tone(base, t, 0.1, { gain: 0.16 })
-  tone(base * 1.5, t + 0.07, 0.16, { gain: 0.18 })
-  if (streak >= 5) tone(base * 2, t + 0.14, 0.18, { gain: 0.14 })
+
+  tone(base, t, 0.1, { type: "triangle", gain: 0.18 })
+  tone(base * 1.26, t + 0.07, 0.12, { type: "triangle", gain: 0.19 })
+  tone(base * 1.5, t + 0.15, 0.22, { gain: 0.2, glideTo: base * 1.9 })
+
+  if (streak >= 3) tone(base * 2.5, t + 0.22, 0.16, { gain: 0.11 })
+  if (streak >= 5) {
+    tone(base * 3, t + 0.26, 0.18, { gain: 0.12 })
+    clap(t + 0.16)
+    clap(t + 0.24)
+  }
 }
 
-/** Punchy hit when a life is lost — more consequential than a wrong buzz. */
+/**
+ * Impactful hit when a life is lost — a sharp buzz followed by a heavier,
+ * descending "womp womp womp" so it reads as a real setback, not a blip.
+ */
 export function playLifeLost() {
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
-  tone(220, t, 0.1, { type: "sawtooth", gain: 0.16, glideTo: 140 })
-  tone(160, t + 0.09, 0.2, { type: "triangle", gain: 0.15, glideTo: 80 })
+  tone(200, t, 0.16, { type: "sawtooth", gain: 0.2, glideTo: 100 })
+  tone(150, t + 0.17, 0.22, { type: "sawtooth", gain: 0.18, glideTo: 80 })
+  tone(110, t + 0.36, 0.32, { type: "triangle", gain: 0.16, glideTo: 55 })
 }
 
 /** Triumphant "1UP"-style jingle for earning a bonus life. */
@@ -165,28 +200,30 @@ function clap(startTime: number) {
 }
 
 /**
- * Big "ta-da!" celebration — bright fanfare chord + sparkle flourish + a
- * light burst of applause. Used for the flashcard "memorized" reward, where
- * the moment should feel like a genuine prize, not just a chime.
+ * Big "ten-ten-ten-TEN!" celebration — a four-note ascending fanfare that
+ * lands on a big ringing chord, a sparkle flourish, and a full round of
+ * applause. Used for the flashcard "memorized" reward, which should feel
+ * like a genuine prize, not just a chime.
  */
 export function playCelebrate() {
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
 
-  // Ta-da! — bright major-chord stab
-  tone(523.25, t, 0.14, { type: "triangle", gain: 0.2 }) // C5
-  tone(659.25, t, 0.14, { type: "triangle", gain: 0.2 }) // E5
-  tone(783.99, t, 0.18, { type: "triangle", gain: 0.22 }) // G5
-  tone(1046.5, t + 0.06, 0.32, { gain: 0.2, glideTo: 1318.51 }) // C6 ring, glides up
+  // "Ten... ten... ten... TEN!" — repeated note building into the payoff.
+  tone(523.25, t, 0.16, { type: "triangle", gain: 0.2 }) // C5
+  tone(523.25, t + 0.19, 0.16, { type: "triangle", gain: 0.2 }) // C5
+  tone(659.25, t + 0.38, 0.16, { type: "triangle", gain: 0.21 }) // E5
+  tone(783.99, t + 0.57, 0.12, { type: "triangle", gain: 0.22 }) // G5 lead-in
+  tone(1046.5, t + 0.63, 0.55, { gain: 0.25, glideTo: 1318.51 }) // C6 — big ring
 
-  // sparkle flourish
-  ;[1567.98, 1864.66, 2093, 2489.02].forEach((freq, i) => {
-    tone(freq, t + 0.18 + i * 0.05, 0.12, { gain: 0.08 })
+  // sparkle flourish, right as the big note lands
+  ;[1567.98, 1864.66, 2093, 2489.02, 2793.83].forEach((freq, i) => {
+    tone(freq, t + 0.78 + i * 0.06, 0.14, { gain: 0.09 })
   })
 
-  // light round of applause
-  for (let i = 0; i < 7; i++) clap(t + 0.08 + Math.random() * 0.35)
+  // a fuller, longer round of applause
+  for (let i = 0; i < 14; i++) clap(t + 0.1 + Math.random() * 0.95)
 }
 
 /** Big celebratory fanfare for beating a high score. */
