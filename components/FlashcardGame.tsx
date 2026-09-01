@@ -481,132 +481,139 @@ export function FlashcardGame({
                 flipped && "is-flipped"
               )}
             >
-              {/* Front — phrase + IPA + speak, decide, then act */}
-              <div
-                className={cn(
-                  "flip-face absolute inset-0 flex flex-col rounded-2xl border p-6 transition-colors md:p-8",
-                  justGotIt
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card"
-                )}
-              >
-                {/* Only while showing the front — some mobile browsers don't
-                    fully hide a rotated face's content via
-                    backface-visibility, which bled this through (mirrored)
-                    onto the back face otherwise. */}
-                {justGotIt && !flipped && (
-                  <div className="absolute right-4 top-4 z-10 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
-                    <Check className="size-4" />
-                  </div>
-                )}
-
-                {/* Content — centered in the space above the floating controls */}
+              {/* Front — phrase + IPA + speak, decide, then act.
+                  The rotate/hide layer (.flip-face) is a plain rectangle;
+                  the rounded/bordered visual box is a nested element. Some
+                  WebKit versions fail to honor backface-visibility on an
+                  element that also has border-radius, which bled this
+                  face's content through (mirrored) onto the other face —
+                  splitting the two responsibilities across two elements
+                  works around it. */}
+              <div className="flip-face absolute inset-0">
                 <div
                   className={cn(
-                    "flex flex-1 flex-col items-center justify-center gap-3",
-                    decided && "pb-14"
+                    "relative flex h-full w-full flex-col overflow-hidden rounded-2xl border p-6 transition-colors md:p-8",
+                    justGotIt
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card"
                   )}
                 >
-                  <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
-                    {current.phrase}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Ipa
-                      phraseId={current.id}
-                      text={current.phrase}
-                      initialIpa={current.ipa}
-                      className="text-sm"
-                    />
-                    <SpeakButton text={current.phrase} />
-                  </div>
-                </div>
+                  {justGotIt && !flipped && (
+                    <div className="absolute right-4 top-4 z-10 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
+                      <Check className="size-4" />
+                    </div>
+                  )}
 
-                {decided ? (
-                  <>
-                    {/* Flip control — floating, bottom-center, so it never
-                        crowds the content above it. */}
-                    <button
-                      type="button"
-                      onClick={toggleFlip}
-                      aria-label="Flip to see definition"
-                      className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
-                    >
-                      <FlipHorizontal2 className="size-4" />
-                    </button>
-                    {/* Next — floating, bottom-right, compact so it stays
-                        out of the way instead of a full-width bar. */}
-                    <Button
-                      onClick={goNext}
-                      size="sm"
-                      className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
-                    >
-                      {index + 1 >= total ? "See results" : "Next"}
-                      <ChevronRight className="size-4" />
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex w-full gap-3">
-                    <Button
-                      onClick={handleStillLearning}
-                      variant="outline"
-                      className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
-                    >
-                      Still Learning 🔄
-                    </Button>
-                    <Button
-                      onClick={handleGotIt}
-                      className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
-                    >
-                      Got it! ✅
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Back — definition + example (only reached via "Still Learning" or the rotate button) */}
-              <div className="flip-face flip-face-back absolute inset-0 rounded-2xl border border-primary/30 bg-card">
-                {/* Scroll region is inset from the bottom edge (not just
-                    padded) so its clipped viewport never reaches under the
-                    floating controls, at any scroll position. */}
-                <div className="absolute inset-x-6 top-6 bottom-16 overflow-y-auto md:inset-x-8 md:top-8">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                    Definition
-                  </p>
-                  <p className="leading-relaxed">{current.definition}</p>
-                  {current.example && (
-                    <div className="mt-4">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Example
-                      </p>
-                      <ExampleQuote
-                        text={current.example}
-                        lineClassName={cn(
-                          "italic leading-relaxed text-muted-foreground",
-                          exampleSizeClass(current.example)
-                        )}
+                  {/* Content — centered in the space above the floating controls */}
+                  <div
+                    className={cn(
+                      "flex flex-1 flex-col items-center justify-center gap-3",
+                      decided && "pb-14"
+                    )}
+                  >
+                    <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
+                      {current.phrase}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Ipa
+                        phraseId={current.id}
+                        text={current.phrase}
+                        initialIpa={current.ipa}
+                        className="text-sm"
                       />
+                      <SpeakButton text={current.phrase} />
+                    </div>
+                  </div>
+
+                  {decided ? (
+                    <>
+                      {/* Flip control — floating, bottom-center, so it never
+                          crowds the content above it. */}
+                      <button
+                        type="button"
+                        onClick={toggleFlip}
+                        aria-label="Flip to see definition"
+                        className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                      >
+                        <FlipHorizontal2 className="size-4" />
+                      </button>
+                      {/* Next — floating, bottom-right, compact so it stays
+                          out of the way instead of a full-width bar. */}
+                      <Button
+                        onClick={goNext}
+                        size="sm"
+                        className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
+                      >
+                        {index + 1 >= total ? "See results" : "Next"}
+                        <ChevronRight className="size-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex w-full gap-3">
+                      <Button
+                        onClick={handleStillLearning}
+                        variant="outline"
+                        className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
+                      >
+                        Still Learning 🔄
+                      </Button>
+                      <Button
+                        onClick={handleGotIt}
+                        className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
+                      >
+                        Got it! ✅
+                      </Button>
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Flip control — floating, bottom-center */}
-                <button
-                  type="button"
-                  onClick={toggleFlip}
-                  aria-label="Flip back to the phrase"
-                  className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
-                >
-                  <FlipHorizontal2 className="size-4" />
-                </button>
-                {/* Next — floating, bottom-right, compact */}
-                <Button
-                  onClick={goNext}
-                  size="sm"
-                  className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
-                >
-                  {index + 1 >= total ? "See results" : "Next"}
-                  <ChevronRight className="size-4" />
-                </Button>
+              {/* Back — definition + example (only reached via "Still Learning" or the rotate button) */}
+              <div className="flip-face flip-face-back absolute inset-0">
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-primary/30 bg-card">
+                  {/* Scroll region is inset from the bottom edge (not just
+                      padded) so its clipped viewport never reaches under the
+                      floating controls, at any scroll position. */}
+                  <div className="absolute inset-x-6 top-6 bottom-16 overflow-y-auto md:inset-x-8 md:top-8">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                      Definition
+                    </p>
+                    <p className="leading-relaxed">{current.definition}</p>
+                    {current.example && (
+                      <div className="mt-4">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Example
+                        </p>
+                        <ExampleQuote
+                          text={current.example}
+                          lineClassName={cn(
+                            "italic leading-relaxed text-muted-foreground",
+                            exampleSizeClass(current.example)
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Flip control — floating, bottom-center */}
+                  <button
+                    type="button"
+                    onClick={toggleFlip}
+                    aria-label="Flip back to the phrase"
+                    className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                  >
+                    <FlipHorizontal2 className="size-4" />
+                  </button>
+                  {/* Next — floating, bottom-right, compact */}
+                  <Button
+                    onClick={goNext}
+                    size="sm"
+                    className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
+                  >
+                    {index + 1 >= total ? "See results" : "Next"}
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

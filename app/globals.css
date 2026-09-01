@@ -167,9 +167,17 @@
   .flip-face {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    /* Forces its own compositing layer — without this, some WebKit
+       versions occasionally paint a stale frame of the hidden face
+       through during the rotation. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
   .flip-face-back {
-    transform: rotateY(180deg);
+    /* Combined into one value — a second `transform` declaration here
+       would replace, not add to, .flip-face's translateZ(0) above. */
+    transform: rotateY(180deg) translateZ(0);
+    -webkit-transform: rotateY(180deg) translateZ(0);
   }
 
   @keyframes shake {
