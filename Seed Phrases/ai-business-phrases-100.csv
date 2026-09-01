@@ -1,0 +1,201 @@
+phrase,definition,example,ipa
+Model drift,The gradual decline in a model's accuracy as real-world data changes over time.,"We monitor model drift monthly to ensure predictions stay accurate.
+Chúng tôi theo dõi hiện tượng model drift hàng tháng để đảm bảo dự đoán vẫn chính xác.",/ˈmɑːdəl drɪft/
+Hallucination rate,The frequency with which an AI model generates false or fabricated information.,"The client asked us to benchmark the hallucination rate before go-live.
+Khách hàng yêu cầu chúng tôi đo hallucination rate trước khi triển khai chính thức.",/həˌluːsəˈneɪʃən reɪt/
+Inference latency,The time it takes a model to produce an output after receiving a request.,"We reduced inference latency by 40% through model quantization.
+Chúng tôi giảm 40% inference latency nhờ kỹ thuật quantization mô hình.",/ˈɪnfərəns ˈleɪtənsi/
+Fine-tuning,The process of further training a pre-trained model on a specific dataset.,"Fine-tuning the base model on our client's support tickets improved accuracy significantly.
+Việc fine-tuning mô hình gốc trên dữ liệu ticket hỗ trợ của khách hàng đã cải thiện độ chính xác đáng kể.",/ˈfaɪn ˈtuːnɪŋ/
+Guardrails,Rules or constraints built into an AI system to prevent harmful or unwanted outputs.,"We implemented guardrails to stop the chatbot from giving financial advice.
+Chúng tôi triển khai guardrails để ngăn chatbot đưa ra tư vấn tài chính.",/ˈɡɑːrdreɪlz/
+Human-in-the-loop,A workflow design where a person reviews or approves AI-generated decisions.,"The approval process stays human-in-the-loop for high-risk transactions.
+Quy trình phê duyệt vẫn giữ human-in-the-loop đối với các giao dịch rủi ro cao.",/ˈhjuːmən ɪn ðə luːp/
+Red teaming,Deliberately testing an AI system for vulnerabilities or harmful behavior.,"Our security team conducted red teaming before the production release.
+Đội bảo mật đã thực hiện red teaming trước khi phát hành bản chính thức.",/rɛd ˈtiːmɪŋ/
+Ground truth,"Verified, accurate data used as the standard to measure a model's performance.","Without reliable ground truth, we can't validate the model's accuracy.
+Nếu không có ground truth đáng tin cậy, chúng tôi không thể kiểm chứng độ chính xác của mô hình.",/ɡraʊnd truːθ/
+Training data,The dataset used to teach a machine learning model.,"The client's training data contained several duplicate records.
+Dữ liệu training data của khách hàng chứa nhiều bản ghi trùng lặp.",/ˈtreɪnɪŋ ˈdeɪtə/
+Model degradation,A decline in model performance over time.,"Model degradation is common if the pipeline isn't retrained regularly.
+Model degradation là hiện tượng phổ biến nếu pipeline không được huấn luyện lại thường xuyên.",/ˈmɑːdəl ˌdɛɡrəˈdeɪʃən/
+Catastrophic forgetting,When a model loses previously learned knowledge after learning new information.,"Catastrophic forgetting is a known risk when fine-tuning on narrow datasets.
+Catastrophic forgetting là rủi ro đã biết khi fine-tuning trên bộ dữ liệu hẹp.",/ˌkætəˈstrɑːfɪk fərˈɡɛtɪŋ/
+Transfer learning,Applying knowledge from one trained model to a new but related task.,"We used transfer learning to cut development time in half.
+Chúng tôi dùng transfer learning để giảm một nửa thời gian phát triển.",/ˈtrænsfɜːr ˈlɜːrnɪŋ/
+Zero-shot learning,A model's ability to perform a task without having seen labeled examples.,"The model handled the new category through zero-shot learning alone.
+Mô hình xử lý danh mục mới chỉ bằng zero-shot learning.",/ˈzɪəroʊ ʃɑːt ˈlɜːrnɪŋ/
+Few-shot learning,Teaching a model a task using only a small number of examples.,"Few-shot learning let us skip the expensive labeling phase.
+Few-shot learning giúp chúng tôi bỏ qua giai đoạn gán nhãn tốn kém.",/fjuː ʃɑːt ˈlɜːrnɪŋ/
+Chain of thought,A prompting technique where a model reasons step-by-step before answering.,"Chain-of-thought prompting improved the accuracy of complex calculations.
+Kỹ thuật chain of thought giúp cải thiện độ chính xác của các phép tính phức tạp.",/tʃeɪn ʌv θɔːt/
+Confidence score,A numerical estimate of how certain a model is about its output.,"We flag any output with a confidence score below 70% for human review.
+Chúng tôi đánh dấu mọi kết quả có confidence score dưới 70% để con người xem xét lại.",/ˈkɑːnfɪdəns skɔːr/
+Prompt injection,An attack that manipulates a model's input to bypass its intended instructions.,"The audit revealed the chatbot was vulnerable to prompt injection.
+Đợt kiểm tra cho thấy chatbot dễ bị tấn công prompt injection.",/prɑːmpt ɪnˈdʒɛkʃən/
+Jailbreak attempt,An effort to trick an AI model into ignoring its safety restrictions.,"The security review logged twelve jailbreak attempts last month.
+Đợt rà soát bảo mật ghi nhận mười hai jailbreak attempt trong tháng trước.",/ˈdʒeɪlbreɪk əˈtɛmpt/
+Data poisoning,Deliberately corrupting training data to compromise a model's behavior.,"Data poisoning is a growing concern for publicly crowdsourced datasets.
+Data poisoning ngày càng là mối lo với các bộ dữ liệu crowdsource công khai.",/ˈdeɪtə ˈpɔɪzənɪŋ/
+Model provenance,"The documented history of how a model was built, trained, and modified.","Enterprise clients now require full model provenance in the contract.
+Khách hàng doanh nghiệp hiện yêu cầu đầy đủ model provenance trong hợp đồng.",/ˈmɑːdəl ˈprɑːvənəns/
+Model watermarking,Embedding a hidden signal in AI output to identify its source model.,"Model watermarking helps detect content generated by our system.
+Model watermarking giúp phát hiện nội dung do hệ thống của chúng tôi tạo ra.",/ˈmɑːdəl ˈwɔːtərmɑːrkɪŋ/
+Explainability,The degree to which a model's decisions can be understood by humans.,"Regulators are pushing for greater explainability in credit-scoring models.
+Cơ quan quản lý đang thúc đẩy explainability cao hơn cho các mô hình chấm điểm tín dụng.",/ɪkˌspleɪnəˈbɪləti/
+Interpretability,How easily a human can understand the internal logic of a model.,"We traded some accuracy for better interpretability in the healthcare use case.
+Chúng tôi đánh đổi một phần độ chính xác để có interpretability tốt hơn trong use case y tế.",/ɪnˌtɜːrprɪtəˈbɪləti/
+Black-box model,A model whose internal decision-making process is not visible or understandable.,"The client refused to deploy a black-box model in a regulated environment.
+Khách hàng từ chối triển khai black-box model trong môi trường bị quản lý chặt.",/blæk bɑːks ˈmɑːdəl/
+Feedback loop,A cycle where a system's output is used to improve future performance.,"We built a feedback loop so user corrections retrain the model weekly.
+Chúng tôi xây dựng feedback loop để các chỉnh sửa của người dùng huấn luyện lại mô hình mỗi tuần.",/ˈfiːdbæk luːp/
+Synthetic data,Artificially generated data used to train or test a model.,"Synthetic data let us test the model without exposing real customer records.
+Synthetic data giúp chúng tôi kiểm thử mô hình mà không lộ dữ liệu khách hàng thật.",/sɪnˈθɛtɪk ˈdeɪtə/
+Data labeling,The process of tagging raw data with the correct output for training.,"Data labeling accounted for nearly 30% of the project budget.
+Data labeling chiếm gần 30% ngân sách dự án.",/ˈdeɪtə ˈleɪbəlɪŋ/
+Overfitting,When a model learns training data too closely and performs poorly on new data.,"The model showed clear signs of overfitting on the validation set.
+Mô hình có dấu hiệu overfitting rõ rệt trên tập validation.",/ˌoʊvərˈfɪtɪŋ/
+Underfitting,When a model is too simple to capture the underlying pattern in the data.,"Underfitting explained why the model missed obvious trends.
+Underfitting là lý do mô hình bỏ sót các xu hướng rõ ràng.",/ˌʌndərˈfɪtɪŋ/
+Edge deployment,Running an AI model directly on local devices rather than the cloud.,"Edge deployment reduced latency for the factory's quality-control system.
+Edge deployment giúp giảm độ trễ cho hệ thống kiểm soát chất lượng của nhà máy.",/ɛdʒ dɪˈplɔɪmənt/
+On-premise deployment,Installing and running software on a client's own servers rather than the cloud.,"The bank required on-premise deployment to meet data residency rules.
+Ngân hàng yêu cầu on-premise deployment để đáp ứng quy định về data residency.",/ɑːn ˈprɛmɪs dɪˈplɔɪmənt/
+Latency budget,The maximum acceptable delay allowed for a system to respond.,"Our latency budget for the voice assistant is under 300 milliseconds.
+Latency budget cho trợ lý giọng nói của chúng tôi là dưới 300 mili giây.",/ˈleɪtənsi ˈbʌdʒɪt/
+Throughput capacity,The maximum volume of requests a system can process in a given time.,"We scaled infrastructure to double the throughput capacity before launch.
+Chúng tôi mở rộng hạ tầng để tăng gấp đôi throughput capacity trước khi ra mắt.",/ˈθruːpʊt kəˈpæsəti/
+Context window,The amount of text a language model can process at one time.,"The client's documents exceeded the model's context window, so we added chunking.
+Tài liệu của khách hàng vượt quá context window của mô hình nên chúng tôi phải chia nhỏ dữ liệu.",/ˈkɑːntɛkst ˈwɪndoʊ/
+Token limit,The maximum number of text units a model can accept or generate per request.,"Long transcripts had to be split to stay within the token limit.
+Các bản ghi dài phải được chia nhỏ để nằm trong token limit cho phép.",/ˈtoʊkən ˈlɪmɪt/
+Vector database,A database optimized for storing and searching numerical representations of data.,"We chose a vector database to power the semantic search feature.
+Chúng tôi chọn vector database để vận hành tính năng tìm kiếm ngữ nghĩa.",/ˈvɛktər ˈdeɪtəbeɪs/
+Embedding space,A mathematical space where data is represented as vectors capturing meaning.,"Similar customer complaints cluster closely together in the embedding space.
+Các khiếu nại tương tự của khách hàng tập trung gần nhau trong embedding space.",/ɪmˈbɛdɪŋ speɪs/
+Model weights,The internal parameters a model learns during training.,"The contract specifies that model weights remain the client's property.
+Hợp đồng quy định model weights vẫn thuộc quyền sở hữu của khách hàng.",/ˈmɑːdəl weɪts/
+Quantization,Reducing the precision of a model's numbers to make it smaller and faster.,"Quantization cut the model size by 75% with minimal accuracy loss.
+Quantization giúp giảm 75% kích thước mô hình mà hầu như không mất độ chính xác.",/ˌkwɑːntɪˈzeɪʃən/
+Foundation model,"A large, general-purpose model trained on broad data and adapted for many tasks.","We built the solution on top of an open-source foundation model.
+Chúng tôi xây dựng giải pháp dựa trên một foundation model mã nguồn mở.",/faʊnˈdeɪʃən ˈmɑːdəl/
+AI governance framework,A structured set of policies for managing the risks and use of AI systems.,"The client's AI governance framework required quarterly bias audits.
+AI governance framework của khách hàng yêu cầu kiểm toán thiên kiến hàng quý.",/ˌeɪ ˈaɪ ˈɡʌvərnəns ˈfreɪmwɜːrk/
+Responsible AI,The practice of designing and deploying AI systems ethically and safely.,"Our proposal included a dedicated responsible AI section for the RFP.
+Đề xuất của chúng tôi có riêng một phần về responsible AI cho hồ sơ RFP.",/rɪˈspɑːnsəbəl ˌeɪ ˈaɪ/
+Ethical AI,AI development guided by moral principles such as fairness and transparency.,"The board asked for an ethical AI review before approving the budget.
+Ban lãnh đạo yêu cầu rà soát ethical AI trước khi duyệt ngân sách.",/ˈɛθɪkəl ˌeɪ ˈaɪ/
+Algorithmic accountability,Holding organizations responsible for the outcomes of their automated systems.,"New regulations are increasing pressure for algorithmic accountability.
+Các quy định mới đang gia tăng áp lực về algorithmic accountability.",/ˌælɡəˈrɪðmɪk əˌkaʊntəˈbɪləti/
+Audit trail,A recorded history of actions and decisions that can be reviewed later.,"Every model prediction is logged to maintain a complete audit trail.
+Mọi dự đoán của mô hình đều được ghi lại để duy trì audit trail đầy đủ.",/ˈɔːdɪt treɪl/
+Compliance framework,A structured approach for meeting legal and regulatory requirements.,"We mapped the solution against the client's compliance framework early on.
+Chúng tôi đối chiếu giải pháp với compliance framework của khách hàng ngay từ đầu.",/kəmˈplaɪəns ˈfreɪmwɜːrk/
+Data residency,The legal requirement that data be stored within a specific geographic location.,"Data residency rules forced us to host the model on EU servers.
+Quy định data residency buộc chúng tôi phải lưu trữ mô hình trên máy chủ tại EU.",/ˈdeɪtə ˈrɛzɪdənsi/
+Data sovereignty,A country's right to govern the data generated within its borders.,"Data sovereignty concerns delayed the Singapore deployment by two weeks.
+Lo ngại về data sovereignty đã làm chậm việc triển khai tại Singapore hai tuần.",/ˈdeɪtə ˈsɑːvrənti/
+Bias mitigation,Techniques used to reduce unfair patterns in a model's predictions.,"The proposal outlined our bias mitigation strategy for the hiring model.
+Đề xuất trình bày chiến lược bias mitigation cho mô hình tuyển dụng.",/ˈbaɪəs ˌmɪtɪˈɡeɪʃən/
+Content moderation,The process of monitoring and filtering harmful or inappropriate content.,"Automated content moderation flagged 2% of user submissions for review.
+Content moderation tự động đánh dấu 2% nội dung người dùng gửi lên để xem xét.",/ˈkɑːntɛnt ˌmɑːdəˈreɪʃən/
+Risk appetite,The level of risk an organization is willing to accept to achieve its goals.,"The client's risk appetite for experimental AI features is very low.
+Risk appetite của khách hàng đối với các tính năng AI thử nghiệm là rất thấp.",/rɪsk ˈæpɪtaɪt/
+Due diligence,A careful investigation conducted before entering a deal or agreement.,"We ran technical due diligence on the vendor's AI stack before signing.
+Chúng tôi thực hiện due diligence kỹ thuật với stack AI của nhà cung cấp trước khi ký hợp đồng.",/duː ˈdɪlɪdʒəns/
+Disaster recovery,A plan for restoring systems and data after a major failure or outage.,"The SLA requires a disaster recovery plan with a four-hour recovery window.
+SLA yêu cầu có kế hoạch disaster recovery với thời gian khôi phục trong bốn giờ.",/dɪˈzæstər rɪˈkʌvəri/
+Business continuity,An organization's ability to keep operating during and after a disruption.,"Business continuity planning is mandatory for mission-critical AI systems.
+Lập kế hoạch business continuity là bắt buộc với các hệ thống AI mission-critical.",/ˈbɪznəs kənˈtɪnjuəti/
+Fail-safe mechanism,A built-in feature that prevents harm if a system malfunctions.,"The fail-safe mechanism shuts down the model if confidence drops too low.
+Fail-safe mechanism sẽ tắt mô hình nếu độ tin cậy giảm quá thấp.",/feɪl seɪf ˈmɛkənɪzəm/
+Fallback strategy,A backup plan used when the primary approach fails.,"If the model times out, the fallback strategy routes the request to a human agent.
+Nếu mô hình timeout, fallback strategy sẽ chuyển yêu cầu sang cho nhân viên xử lý.",/ˈfɔːlbæk ˈstrætədʒi/
+Graceful degradation,"A system's ability to keep functioning, at reduced capacity, when part of it fails.","We designed the pipeline for graceful degradation during peak traffic.
+Chúng tôi thiết kế pipeline theo hướng graceful degradation trong giờ cao điểm.",/ˈɡreɪsfəl ˌdɛɡrəˈdeɪʃən/
+Circuit breaker pattern,A design technique that stops repeated calls to a failing service to prevent cascading errors.,"The circuit breaker pattern prevented the outage from spreading to other services.
+Circuit breaker pattern đã ngăn sự cố lan sang các dịch vụ khác.",/ˈsɜːrkɪt ˈbreɪkər ˈpætərn/
+Uptime guarantee,A contractual promise about how often a system will be operational.,"Our contract offers a 99.9% uptime guarantee for the inference API.
+Hợp đồng của chúng tôi cam kết uptime guarantee 99.9% cho API inference.",/ˈʌptaɪm ˌɡærənˈtiː/
+Service level agreement,A contract that defines the expected level of service between provider and client.,"The service level agreement specifies a two-hour response time for critical bugs.
+Service level agreement quy định thời gian phản hồi hai giờ cho các lỗi nghiêm trọng.",/ˈsɜːrvɪs ˈlɛvəl əˈɡriːmənt/
+Proof of concept,A small-scale demonstration used to test whether an idea is feasible.,"We delivered the proof of concept within three weeks to secure the contract.
+Chúng tôi bàn giao proof of concept trong ba tuần để chốt được hợp đồng.",/pruːf ʌv ˈkɑːnsɛpt/
+Pilot program,A trial run of a project on a limited scale before full deployment.,"The pilot program covered only one branch office before the national rollout.
+Pilot program chỉ triển khai tại một chi nhánh trước khi mở rộng toàn quốc.",/ˈpaɪlət ˈproʊɡræm/
+Vendor lock-in,A situation where a customer becomes dependent on one supplier's technology.,"The client was wary of vendor lock-in with a proprietary AI platform.
+Khách hàng e ngại vendor lock-in khi dùng nền tảng AI độc quyền.",/ˈvɛndər lɑːk ɪn/
+Total cost of ownership,"The full cost of a system including purchase, operation, and maintenance.","The total cost of ownership favored the open-source solution long-term.
+Total cost of ownership về dài hạn nghiêng về giải pháp mã nguồn mở.",/ˈtoʊtəl kɔːst ʌv ˈoʊnərʃɪp/
+Build vs. buy,A decision between developing a solution in-house or purchasing one.,"We ran a build-vs-buy analysis before recommending the vendor's platform.
+Chúng tôi phân tích build vs. buy trước khi đề xuất nền tảng của nhà cung cấp.",/bɪld vɜːrsəs baɪ/
+Make-or-buy decision,A choice between manufacturing or developing something internally versus purchasing it externally.,"The make-or-buy decision came down to time-to-market pressure.
+Make-or-buy decision cuối cùng phụ thuộc vào áp lực về thời gian ra thị trường.",/meɪk ɔːr baɪ dɪˈsɪʒən/
+Competitive moat,A sustainable advantage that protects a business from competitors.,"Our proprietary dataset is the competitive moat behind the pricing model.
+Bộ dữ liệu độc quyền chính là competitive moat đằng sau mô hình định giá của chúng tôi.",/kəmˈpɛtətɪv moʊt/
+First-mover advantage,The benefit gained by being the first to enter a market.,"Early adoption of the tool gave us a first-mover advantage in the region.
+Việc sớm áp dụng công cụ này mang lại first-mover advantage cho chúng tôi trong khu vực.",/fɜːrst ˈmuːvər ədˈvæntɪdʒ/
+Network effect,A phenomenon where a product becomes more valuable as more people use it.,"The platform's network effect made it harder for competitors to catch up.
+Network effect của nền tảng khiến đối thủ khó bắt kịp hơn.",/ˈnɛtwɜːrk ɪˈfɛkt/
+Switching cost,The expense or effort a customer incurs when changing to a different provider.,"High switching costs kept the client loyal despite rising prices.
+Switching cost cao giúp giữ chân khách hàng dù giá tăng.",/ˈswɪtʃɪŋ kɔːst/
+Barrier to entry,An obstacle that makes it difficult for new competitors to enter a market.,"Regulatory approval is a significant barrier to entry in healthcare AI.
+Việc được cơ quan quản lý phê duyệt là barrier to entry lớn trong lĩnh vực AI y tế.",/ˈbæriər tuː ˈɛntri/
+Value proposition,A clear statement of the benefit a product or service delivers to customers.,"We sharpened the value proposition before the final pitch.
+Chúng tôi mài giũa lại value proposition trước buổi pitch cuối cùng.",/ˈvæljuː ˌprɑːpəˈzɪʃən/
+Differentiation strategy,A plan to make a product stand out from competitors.,"Our differentiation strategy centers on faster implementation timelines.
+Differentiation strategy của chúng tôi tập trung vào tốc độ triển khai nhanh hơn.",/ˌdɪfəˌrɛnʃiˈeɪʃən ˈstrætədʒi/
+Go-to-market strategy,A plan for how a company will reach customers and sell its product.,"The go-to-market strategy prioritized enterprise clients in Tier 1 regions.
+Go-to-market strategy ưu tiên khách hàng doanh nghiệp tại các thị trường Tier 1.",/ˈɡoʊ tuː ˈmɑːrkɪt ˈstrætədʒi/
+Customer acquisition cost,The total expense of gaining a new customer.,"Reducing customer acquisition cost was the top priority this quarter.
+Giảm customer acquisition cost là ưu tiên hàng đầu trong quý này.",/ˈkʌstəmər ˌækwɪˈzɪʃən kɔːst/
+Customer lifetime value,The total revenue expected from a customer over the relationship's duration.,"We segmented accounts based on customer lifetime value.
+Chúng tôi phân nhóm khách hàng dựa trên customer lifetime value.",/ˈkʌstəmər ˈlaɪftaɪm ˈvæljuː/
+Churn rate,The percentage of customers who stop using a service over a period.,"The churn rate dropped after we introduced proactive support.
+Churn rate giảm sau khi chúng tôi triển khai hỗ trợ chủ động.",/tʃɜːrn reɪt/
+Retention rate,The percentage of customers who continue using a service over time.,"Our retention rate for enterprise clients exceeds 90%.
+Retention rate với khách hàng doanh nghiệp của chúng tôi vượt 90%.",/rɪˈtɛnʃən reɪt/
+Upsell opportunity,A chance to sell an existing customer a more expensive or additional product.,"The analytics dashboard created a clear upsell opportunity.
+Bảng điều khiển phân tích đã tạo ra một upsell opportunity rõ ràng.",/ˈʌpsɛl ˌɑːpərˈtuːnəti/
+Cross-sell opportunity,A chance to sell a related product to an existing customer.,"We identified a cross-sell opportunity for the compliance module.
+Chúng tôi phát hiện một cross-sell opportunity cho module tuân thủ.",/krɔːs sɛl ˌɑːpərˈtuːnəti/
+Land-and-expand strategy,A sales approach that starts with a small deal and grows the account over time.,"Our land-and-expand strategy turned a pilot into a company-wide rollout.
+Land-and-expand strategy đã biến một dự án pilot thành triển khai toàn công ty.",/lænd ənd ɪkˈspænd ˈstrætədʒi/
+Enterprise readiness,"The degree to which a product meets the security, scale, and support needs of large organizations.","The client's checklist tested our enterprise readiness in detail.
+Checklist của khách hàng kiểm tra rất kỹ enterprise readiness của chúng tôi.",/ˈɛntərpraɪz ˈrɛdinəs/
+Production-grade system,"A system built to reliably handle real-world usage, not just testing.","We rebuilt the prototype into a production-grade system before launch.
+Chúng tôi xây lại bản dùng thử thành production-grade system trước khi ra mắt.",/prəˈdʌkʃən ɡreɪd ˈsɪstəm/
+Mission-critical system,A system whose failure would seriously disrupt business operations.,"The fraud-detection model is a mission-critical system for the bank.
+Mô hình phát hiện gian lận là một mission-critical system đối với ngân hàng.",/ˈmɪʃən ˈkrɪtɪkəl ˈsɪstəm/
+Technical debt,The implied cost of future rework caused by choosing a quick solution now.,"Skipping proper testing added significant technical debt to the project.
+Bỏ qua kiểm thử kỹ lưỡng đã tạo ra technical debt đáng kể cho dự án.",/ˈtɛknɪkəl dɛt/
+Legacy system,"An old system still in use, often difficult to integrate with new technology.","Integrating the AI model with the client's legacy system took extra weeks.
+Việc tích hợp mô hình AI với legacy system của khách hàng tốn thêm nhiều tuần.",/ˈlɛɡəsi ˈsɪstəm/
+Greenfield project,A project built from scratch with no constraints from existing systems.,"The startup gave us a greenfield project with full technical freedom.
+Startup này giao cho chúng tôi một greenfield project với toàn quyền về kỹ thuật.",/ˈɡriːnfiːld ˈprɑːdʒɛkt/
+Brownfield project,A project that must integrate with or build upon existing systems.,"The brownfield project required careful compatibility testing with the old CRM.
+Brownfield project này đòi hỏi kiểm thử tương thích cẩn thận với CRM cũ.",/ˈbraʊnfiːld ˈprɑːdʒɛkt/
+Scope creep,"The gradual, uncontrolled expansion of a project's requirements.","Scope creep pushed the delivery date back by six weeks.
+Scope creep đã đẩy lùi ngày bàn giao thêm sáu tuần.",/skoʊp kriːp/
+Stakeholder buy-in,Agreement and support from the people affected by or invested in a decision.,"We held workshops to secure stakeholder buy-in before implementation.
+Chúng tôi tổ chức workshop để có được stakeholder buy-in trước khi triển khai.",/ˈsteɪkˌhoʊldər baɪ ɪn/
+Executive sponsor,A senior leader who champions and supports a project internally.,"Without an executive sponsor, the AI initiative lost budget priority.
+Không có executive sponsor, sáng kiến AI mất ưu tiên về ngân sách.",/ɪɡˈzɛkjətɪv ˈspɑːnsər/
+Internal champion,An employee who actively advocates for a product or project within their organization.,"Our internal champion pushed the proposal through procurement.
+Internal champion của chúng tôi đã thúc đẩy đề xuất qua được khâu mua sắm.",/ɪnˈtɜːrnəl ˈtʃæmpiən/
+Decision maker,The person with the authority to approve or reject a deal or plan.,"We finally got a meeting with the real decision maker.
+Cuối cùng chúng tôi cũng có được cuộc gặp với decision maker thực sự.",/dɪˈsɪʒən ˈmeɪkər/
+Budget holder,The person who controls spending authority for a project or department.,"The budget holder approved the pilot but not the full rollout.
+Budget holder phê duyệt giai đoạn pilot nhưng chưa duyệt triển khai toàn diện.",/ˈbʌdʒɪt ˈhoʊldər/
+Cost-benefit analysis,A comparison of the expected costs and benefits of a decision.,"The cost-benefit analysis justified investing in a custom model.
+Cost-benefit analysis đã chứng minh việc đầu tư vào mô hình tùy chỉnh là hợp lý.",/kɔːst ˈbɛnɪfɪt əˈnæləsɪs/
+Return on investment,A measure of the profit gained relative to the cost of an investment.,"The client expected a clear return on investment within twelve months.
+Khách hàng kỳ vọng return on investment rõ ràng trong vòng mười hai tháng.",/rɪˈtɜːrn ɑːn ɪnˈvɛstmənt/
+Payback period,The time needed to recover the cost of an investment.,"The automation tool had a payback period of just eight months.
+Công cụ tự động hóa này có payback period chỉ tám tháng.",/ˈpeɪbæk ˈpɪəriəd/
+Statement of work,"A formal document defining the scope, deliverables, and timeline of a project.","We finalized the statement of work before starting development.
+Chúng tôi hoàn thiện statement of work trước khi bắt đầu phát triển.",/ˈsteɪtmənt ʌv wɜːrk/
+Deliverable milestone,"A specific, measurable output due at a defined point in a project.","The first deliverable milestone is the working prototype.
+Deliverable milestone đầu tiên là bản prototype chạy được.",/dɪˈlɪvərəbəl ˈmaɪlstoʊn/
+Change request,"A formal proposal to modify the scope, timeline, or deliverables of a project.","Any change request must be approved by the client before implementation.
+Mọi change request đều phải được khách hàng phê duyệt trước khi thực hiện.",/tʃeɪndʒ rɪˈkwɛst/

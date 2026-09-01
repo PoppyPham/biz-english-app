@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+~$*.xlsx
+~$*.xls
+~$*.docx
 
 # debug
 npm-debug.log*
