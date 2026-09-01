@@ -35,6 +35,15 @@ interface FlashcardGameProps {
   initialProgress: Pick<UserProgress, "phrase_id" | "status">[]
 }
 
+// Scale the example text down as it gets longer, so a long example still
+// fits on screen instead of getting cramped against the floating controls.
+function exampleSizeClass(text: string | null | undefined): string {
+  const len = text?.length ?? 0
+  if (len > 220) return "text-xs"
+  if (len > 140) return "text-sm"
+  return "text-base"
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -478,8 +487,13 @@ export function FlashcardGame({
                   </div>
                 )}
 
-                {/* Content — centered in the space above the action row */}
-                <div className="flex flex-1 flex-col items-center justify-center gap-3">
+                {/* Content — centered in the space above the floating controls */}
+                <div
+                  className={cn(
+                    "flex flex-1 flex-col items-center justify-center gap-3",
+                    decided && "pb-14"
+                  )}
+                >
                   <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                     {current.phrase}
                   </p>
@@ -492,28 +506,31 @@ export function FlashcardGame({
                     />
                     <SpeakButton text={current.phrase} />
                   </div>
+                </div>
 
-                  {decided && (
+                {decided ? (
+                  <>
+                    {/* Flip control — floating, bottom-center, so it never
+                        crowds the content above it. */}
                     <button
                       type="button"
                       onClick={toggleFlip}
                       aria-label="Flip to see definition"
-                      className="mt-1 flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                      className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
                     >
                       <FlipHorizontal2 className="size-4" />
                     </button>
-                  )}
-                </div>
-
-                {/* Action row — pinned to the bottom of the card */}
-                {decided ? (
-                  <Button
-                    onClick={goNext}
-                    className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
-                  >
-                    {index + 1 >= total ? "See results" : "Next"}
-                    <ChevronRight className="size-4" />
-                  </Button>
+                    {/* Next — floating, bottom-right, compact so it stays
+                        out of the way instead of a full-width bar. */}
+                    <Button
+                      onClick={goNext}
+                      size="sm"
+                      className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
+                    >
+                      {index + 1 >= total ? "See results" : "Next"}
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </>
                 ) : (
                   <div className="flex w-full gap-3">
                     <Button
@@ -535,7 +552,7 @@ export function FlashcardGame({
 
               {/* Back — definition + example (only reached via "Still Learning" or the rotate button) */}
               <div className="flip-face flip-face-back absolute inset-0 flex flex-col rounded-2xl border border-primary/30 bg-card p-6 md:p-8">
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto pb-14">
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
                     Definition
                   </p>
@@ -547,29 +564,33 @@ export function FlashcardGame({
                       </p>
                       <ExampleQuote
                         text={current.example}
-                        lineClassName="italic leading-relaxed text-muted-foreground"
+                        lineClassName={cn(
+                          "italic leading-relaxed text-muted-foreground",
+                          exampleSizeClass(current.example)
+                        )}
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-col items-center gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={toggleFlip}
-                    aria-label="Flip back to the phrase"
-                    className="flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
-                  >
-                    <FlipHorizontal2 className="size-4" />
-                  </button>
-                  <Button
-                    onClick={goNext}
-                    className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
-                  >
-                    {index + 1 >= total ? "See results" : "Next"}
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
+                {/* Flip control — floating, bottom-center */}
+                <button
+                  type="button"
+                  onClick={toggleFlip}
+                  aria-label="Flip back to the phrase"
+                  className="absolute bottom-4 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                >
+                  <FlipHorizontal2 className="size-4" />
+                </button>
+                {/* Next — floating, bottom-right, compact */}
+                <Button
+                  onClick={goNext}
+                  size="sm"
+                  className="absolute bottom-4 right-4 gap-1 rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-primary/90"
+                >
+                  {index + 1 >= total ? "See results" : "Next"}
+                  <ChevronRight className="size-4" />
+                </Button>
               </div>
             </div>
           </div>
