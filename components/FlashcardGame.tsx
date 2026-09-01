@@ -490,7 +490,11 @@ export function FlashcardGame({
                     : "border-border bg-card"
                 )}
               >
-                {justGotIt && (
+                {/* Only while showing the front — some mobile browsers don't
+                    fully hide a rotated face's content via
+                    backface-visibility, which bled this through (mirrored)
+                    onto the back face otherwise. */}
+                {justGotIt && !flipped && (
                   <div className="absolute right-4 top-4 z-10 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
                     <Check className="size-4" />
                   </div>
