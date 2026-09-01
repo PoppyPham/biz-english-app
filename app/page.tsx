@@ -16,7 +16,8 @@ import {
   type Phrase,
   type UserProgress,
 } from "@/lib/types"
-import { BookOpen, ArrowRight, Zap, Plus } from "lucide-react"
+import { getMasteryProgress } from "@/lib/mastery"
+import { BookOpen, ArrowRight, Zap, Plus, Trophy } from "lucide-react"
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ async function getPageData() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [{ data: categories }, { data: phrases }, { data: progress }] =
+  const [{ data: categories }, { data: phrases }, { data: progress }, { data: highScores }] =
     await Promise.all([
       supabase
         .from("categories")
@@ -40,7 +41,18 @@ async function getPageData() {
             .select("phrase_id, status, is_favorite, updated_at")
             .eq("user_id", user.id)
         : Promise.resolve({ data: [] }),
+      user
+        ? supabase
+            .from("quiz_high_scores")
+            .select("high_score")
+            .eq("user_id", user.id)
+        : Promise.resolve({ data: [] }),
     ])
+
+  const bestQuizScore = (highScores ?? []).reduce(
+    (max, row) => Math.max(max, row.high_score as number),
+    0
+  )
 
   return {
     user,
@@ -56,6 +68,7 @@ async function getPageData() {
       UserProgress,
       "phrase_id" | "status" | "is_favorite" | "updated_at"
     >[],
+    bestQuizScore,
   }
 }
 
@@ -98,15 +111,27 @@ function getInProgressPhrases(
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
-  const { user, categories, phrases, progress } = await getPageData()
+  const { user, categories, phrases, progress, bestQuizScore } =
+    await getPageData()
   const categoryStats = buildCategoryStats(categories, phrases, progress)
   const inProgressPhrases = getInProgressPhrases(progress)
   const hasInProgress = inProgressPhrases.length > 0
 
   const totalLearned = progress.filter((p) => p.status === "learned").length
+  const totalLearning = progress.filter((p) => p.status === "learning").length
   const totalPhrases = phrases.length
+  const totalRemaining = Math.max(
+    0,
+    totalPhrases - totalLearned - totalLearning
+  )
   const overallPct =
     totalPhrases > 0 ? Math.round((totalLearned / totalPhrases) * 100) : 0
+  const learnedShare = totalPhrases > 0 ? (totalLearned / totalPhrases) * 100 : 0
+  const learningShare =
+    totalPhrases > 0 ? (totalLearning / totalPhrases) * 100 : 0
+
+  const mastery = getMasteryProgress(totalLearned)
+  const MasteryIcon = mastery.current.icon
 
   // "Your Words" stats for the grid card.
   const progressById = new Map(progress.map((p) => [p.phrase_id, p]))
@@ -147,7 +172,7 @@ export default async function HomePage() {
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 {user
-                  ? `${totalLearned} of ${totalPhrases} phrases learned · ${overallPct}% complete`
+                  ? `${totalPhrases} phrases across ${categories.length} categories`
                   : "Learn the phrases that matter in the workplace"}
               </p>
             </div>
@@ -164,19 +189,118 @@ export default async function HomePage() {
             )}
           </div>
 
-          {/* Overall progress bar — only when logged in */}
+          {/* Overall progress bar — learned / learning / remaining */}
           {user && totalPhrases > 0 && (
             <div className="mt-5">
-              <Progress
-                value={overallPct}
-                className="h-2 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
-              />
+              <div className="relative flex h-2.5 w-full overflow-hidden rounded-full bg-border">
+                {totalLearned > 0 && (
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${learnedShare}%` }}
+                  />
+                )}
+                {totalLearning > 0 && (
+                  <div
+                    className="h-full bg-amber-400 transition-all duration-500"
+                    style={{ width: `${learningShare}%` }}
+                  />
+                )}
+              </div>
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                <span>
+                  <span className="font-semibold text-primary">
+                    {totalLearned}
+                  </span>{" "}
+                  learned
+                </span>
+                <span>
+                  <span className="font-semibold text-amber-400">
+                    {totalLearning}
+                  </span>{" "}
+                  learning
+                </span>
+                <span>
+                  <span className="font-semibold text-foreground">
+                    {totalRemaining}
+                  </span>{" "}
+                  remaining
+                </span>
+                <span>· {overallPct}% complete</span>
+              </p>
             </div>
           )}
         </div>
       </section>
 
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 md:px-8">
+        {/* ── Mastery Level + Highest Quiz Score ── */}
+        {user && (
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* Word Mastery Level */}
+            <Card className="border-border bg-card ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex size-12 shrink-0 items-center justify-center rounded-full ${mastery.current.glow}`}
+                  >
+                    <MasteryIcon className={`size-6 ${mastery.current.color}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Level {mastery.current.level} · Word Mastery
+                    </p>
+                    <p className={`truncate text-sm font-bold ${mastery.current.color}`}>
+                      {mastery.current.title}
+                    </p>
+                  </div>
+                </div>
+
+                {mastery.next ? (
+                  <div className="mt-3">
+                    <Progress
+                      value={mastery.pct}
+                      className="h-1.5 bg-border [&_[data-slot=progress-indicator]]:bg-primary"
+                    />
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        {mastery.intoLevel}
+                      </span>{" "}
+                      / {mastery.levelSpan} to{" "}
+                      <span className="font-medium">{mastery.next.title}</span>
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[11px] font-medium text-yellow-300">
+                    Max level reached — legendary status achieved
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Highest Quiz Score */}
+            <Card className="border-border bg-card ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300 [animation-delay:40ms]">
+              <CardContent className="flex items-center gap-3 pt-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-yellow-400/15">
+                  <Trophy className="size-6 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Highest Quiz Score
+                  </p>
+                  <p className="text-xl font-bold text-yellow-400">
+                    {bestQuizScore > 0 ? bestQuizScore.toLocaleString() : "—"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {bestQuizScore > 0
+                      ? "Personal record"
+                      : "Play Quiz to set a record"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
         {/* ── Continue Learning ── */}
         {user && hasInProgress && (
           <section>
