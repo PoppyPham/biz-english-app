@@ -192,6 +192,22 @@
     animation: float-up 0.9s ease-out both;
   }
 
+  @keyframes burst-ring {
+    0% { transform: scale(0.3); opacity: 0.55; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  .animate-burst-ring {
+    animation: burst-ring 0.8s ease-out both;
+  }
+
+  @keyframes sparkle-out {
+    0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
+    100% { transform: translate(var(--sx), var(--sy)) scale(1); opacity: 0; }
+  }
+  .animate-sparkle-out {
+    animation: sparkle-out 0.85s ease-out both;
+  }
+
   @keyframes pop-in {
     0% { transform: scale(0.5); opacity: 0; }
     60% { transform: scale(1.1); opacity: 1; }

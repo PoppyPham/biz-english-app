@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { FlashcardGame } from "@/components/FlashcardGame"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import { YOUR_WORDS, type Category, type Phrase } from "@/lib/types"
+import { YOUR_WORDS, type Category, type Phrase, type UserProgress } from "@/lib/types"
 
 export default async function FlashcardPage({
   searchParams,
@@ -34,9 +34,19 @@ export default async function FlashcardPage({
   let query = supabase.from("phrases").select("*")
   if (isYourWords && user) query = query.eq("owner_id", user.id)
   else if (category) query = query.eq("category_id", category.id)
-  const { data: phrases } = await query
+
+  const [{ data: phrases }, { data: progressRows }] = await Promise.all([
+    query,
+    user
+      ? supabase.from("user_progress").select("phrase_id, status").eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
+  ])
 
   const list = (phrases ?? []) as Phrase[]
+  const initialProgress = (progressRows ?? []) as Pick<
+    UserProgress,
+    "phrase_id" | "status"
+  >[]
 
   const gameName = isYourWords ? YOUR_WORDS.name : category?.name ?? "All categories"
   const gameSlug = isYourWords ? YOUR_WORDS.slug : category?.slug ?? null
@@ -71,6 +81,7 @@ export default async function FlashcardPage({
       userId={user?.id ?? null}
       categoryName={gameName}
       categorySlug={gameSlug}
+      initialProgress={initialProgress}
     />
   )
 }

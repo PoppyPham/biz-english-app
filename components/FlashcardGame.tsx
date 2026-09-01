@@ -1,25 +1,38 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw, Repeat, Sparkles } from "lucide-react"
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  RotateCw,
+  Repeat,
+  Sparkles,
+  Check,
+  PartyPopper,
+} from "lucide-react"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
-import { playFlip, playCorrect, playNeutral, playComplete } from "@/lib/sounds"
+import { playMemorized, playNeutral, playComplete } from "@/lib/sounds"
+import { speakText } from "@/lib/speak"
 import { ExampleQuote } from "@/components/ExampleQuote"
-import type { Phrase } from "@/lib/types"
+import type { Phrase, UserProgress } from "@/lib/types"
 
 type Result = "learned" | "learning"
+type Status = "new" | "learning" | "learned"
 
 interface FlashcardGameProps {
   phrases: Phrase[]
   userId: string | null
   categoryName: string
   categorySlug: string | null
+  initialProgress: Pick<UserProgress, "phrase_id" | "status">[]
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -36,21 +49,55 @@ export function FlashcardGame({
   userId,
   categoryName,
   categorySlug,
+  initialProgress,
 }: FlashcardGameProps) {
   const [deck, setDeck] = useState<Phrase[]>([])
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
+  const [decided, setDecided] = useState(false) // this card graded this round
+  const [justGotIt, setJustGotIt] = useState(false) // brief celebratory overlay
   const [done, setDone] = useState(false)
-  // phraseId -> result
+  // phraseId -> result, this session (for the end-screen summary)
   const [results, setResults] = useState<Record<string, Result>>({})
+
+  // Persisted status per phrase (seeded from the DB, updated live as the
+  // user grades cards) — drives the "how far along am I" progress bar.
+  const [progressMap, setProgressMap] = useState<Record<string, Status>>(() =>
+    Object.fromEntries(initialProgress.map((p) => [p.phrase_id, p.status]))
+  )
+  const [memorizedPopup, setMemorizedPopup] = useState<number | null>(null)
+  const [showBurst, setShowBurst] = useState(false) // big "reward" celebration
+  const popupKey = useRef(0)
+
+  const burstTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Shuffle on mount (client-only to avoid hydration mismatch)
   useEffect(() => {
     setDeck(shuffle(phrases))
+    return () => {
+      if (burstTimeout.current) clearTimeout(burstTimeout.current)
+    }
   }, [phrases])
 
   const total = deck.length
   const current = deck[index]
+
+  // Live tally across the whole deck — learned / learning / new.
+  const progressStats = useMemo(() => {
+    let learned = 0
+    let learning = 0
+    for (const p of phrases) {
+      const status = progressMap[p.id] ?? "new"
+      if (status === "learned") learned++
+      else if (status === "learning") learning++
+    }
+    return {
+      learned,
+      learning,
+      newCount: phrases.length - learned - learning,
+      total: phrases.length,
+    }
+  }, [progressMap, phrases])
 
   async function saveResult(phraseId: string, status: Result) {
     if (!userId) return
@@ -66,68 +113,101 @@ export function FlashcardGame({
     )
   }
 
-  const answer = useCallback(
-    (status: Result) => {
-      if (!current || done) return
-      const phraseId = current.id
-      setResults((r) => ({ ...r, [phraseId]: status }))
-      void saveResult(phraseId, status)
-      if (status === "learned") playCorrect()
-      else playNeutral()
+  function goToIndex(next: number) {
+    if (burstTimeout.current) clearTimeout(burstTimeout.current)
+    if (next >= total) {
+      setDone(true)
+    } else {
+      setIndex(next)
+      setFlipped(false)
+      setDecided(false)
+      setJustGotIt(false)
+      setShowBurst(false)
+    }
+  }
 
-      if (index + 1 >= total) {
-        setDone(true)
-      } else {
-        setIndex((i) => i + 1)
-        setFlipped(false)
-      }
-    },
+  // Once a card has been graded, let the user flip back and forth to
+  // review — not available before deciding, so the front→back order stays
+  // intentional (decide first, then peek).
+  function toggleFlip() {
+    if (!decided) return
+    setFlipped((f) => !f)
+  }
+
+  const handleGotIt = useCallback(() => {
+    if (!current || decided || done) return
+    setDecided(true)
+    setJustGotIt(true)
+    setResults((r) => ({ ...r, [current.id]: "learned" }))
+    setProgressMap((m) => ({ ...m, [current.id]: "learned" }))
+    popupKey.current += 1
+    setMemorizedPopup(popupKey.current)
+    playMemorized()
+    void saveResult(current.id, "learned")
+
+    // Big reward-style celebration — stays until the user is ready to move
+    // on (they can flip to peek at the definition first via the rotate
+    // button, or just hit Next).
+    setShowBurst(true)
+    if (burstTimeout.current) clearTimeout(burstTimeout.current)
+    burstTimeout.current = setTimeout(() => setShowBurst(false), 1100)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, done, index, total]
-  )
+  }, [current, decided, done])
+
+  const handleStillLearning = useCallback(() => {
+    if (!current || decided || done) return
+    setDecided(true)
+    setResults((r) => ({ ...r, [current.id]: "learning" }))
+    setProgressMap((m) => ({ ...m, [current.id]: "learning" }))
+    playNeutral()
+    void saveResult(current.id, "learning")
+    setFlipped(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, decided, done])
+
+  // Auto-pronounce the phrase the moment the back is revealed.
+  useEffect(() => {
+    if (flipped && current) speakText(current.phrase)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flipped])
 
   useEffect(() => {
     if (done) playComplete()
   }, [done])
 
   function goNext() {
-    if (index + 1 < total) {
-      setIndex((i) => i + 1)
-      setFlipped(false)
-    }
+    if (index + 1 < total) goToIndex(index + 1)
   }
 
   function goPrev() {
-    if (index > 0) {
-      setIndex((i) => i - 1)
-      setFlipped(false)
-    }
+    if (index > 0) goToIndex(index - 1)
   }
 
-  // Keyboard support
+  // Keyboard support: arrows grade the front; Space continues either way.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (done) return
       if (e.code === "Space") {
         e.preventDefault()
-        playFlip()
-        setFlipped((f) => !f)
-      } else if (e.key === "ArrowRight") {
-        if (flipped) answer("learned")
-        else goNext()
-      } else if (e.key === "ArrowLeft") {
-        if (flipped) answer("learning")
-        else goPrev()
+        if (decided) goNext()
+      } else if (e.key === "ArrowRight" && !decided) {
+        handleGotIt()
+      } else if (e.key === "ArrowLeft" && !decided) {
+        handleStillLearning()
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [flipped, done, answer, index, total])
+  }, [decided, done, handleGotIt, handleStillLearning, index, total])
 
   function restart(subset?: Phrase[]) {
+    if (burstTimeout.current) clearTimeout(burstTimeout.current)
     setDeck(shuffle(subset ?? phrases))
     setIndex(0)
     setFlipped(false)
+    setDecided(false)
+    setJustGotIt(false)
+    setShowBurst(false)
     setResults({})
     setDone(false)
   }
@@ -183,6 +263,30 @@ export function FlashcardGame({
           </div>
         </div>
 
+        {/* Overall category progress */}
+        {userId && progressStats.total > 0 && (
+          <div className="w-full max-w-xs">
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-border">
+              {progressStats.learned > 0 && (
+                <div
+                  className="h-full bg-primary"
+                  style={{ width: `${(progressStats.learned / progressStats.total) * 100}%` }}
+                />
+              )}
+              {progressStats.learning > 0 && (
+                <div
+                  className="h-full bg-amber-400"
+                  style={{ width: `${(progressStats.learning / progressStats.total) * 100}%` }}
+                />
+              )}
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {progressStats.learned}/{progressStats.total} memorized in{" "}
+              {categoryName}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-2 sm:flex-row">
           {missed.length > 0 && (
             <Button
@@ -209,7 +313,7 @@ export function FlashcardGame({
   }
 
   // ── Active game ──
-  const progressPct = Math.round((index / total) * 100)
+  const sessionPct = Math.round((index / total) * 100)
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -235,10 +339,49 @@ export function FlashcardGame({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progressPct}%` }}
+              style={{ width: `${sessionPct}%` }}
             />
           </div>
         </div>
+
+        {/* Overall memorized-so-far bar — the "excitement about progress" HUD */}
+        {userId && progressStats.total > 0 && (
+          <div className="mx-auto mt-2 max-w-2xl">
+            <div className="relative flex h-2 w-full overflow-hidden rounded-full bg-card">
+              {progressStats.learned > 0 && (
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${(progressStats.learned / progressStats.total) * 100}%` }}
+                />
+              )}
+              {progressStats.learning > 0 && (
+                <div
+                  className="h-full bg-amber-400 transition-all duration-500"
+                  style={{ width: `${(progressStats.learning / progressStats.total) * 100}%` }}
+                />
+              )}
+              {memorizedPopup !== null && (
+                <span
+                  key={memorizedPopup}
+                  onAnimationEnd={() => setMemorizedPopup(null)}
+                  className="pointer-events-none absolute -top-1 right-0 text-sm font-bold text-primary animate-float-up"
+                >
+                  +1
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              <span className="font-medium text-primary">
+                {progressStats.learned}
+              </span>{" "}
+              memorized ·{" "}
+              <span className="font-medium text-amber-400">
+                {progressStats.learning}
+              </span>{" "}
+              learning · {progressStats.total} total in {categoryName}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Card area */}
@@ -246,30 +389,32 @@ export function FlashcardGame({
         {/* Flip card */}
         <div
           key={current.id}
-          className="flip-scene w-full max-w-xl animate-in fade-in zoom-in-95 duration-200"
+          className="flip-scene relative w-full max-w-xl animate-in fade-in zoom-in-95 duration-200"
         >
-          <button
-            type="button"
-            onClick={() => {
-              playFlip()
-              setFlipped((f) => !f)
-            }}
-            aria-label="Flip card"
+          <div
             className={cn(
-              "flip-card aspect-[3/2] w-full cursor-pointer text-left",
+              "flip-card aspect-[3/2] w-full",
               flipped && "is-flipped"
             )}
           >
-            {/* Front — phrase + IPA + speak */}
-            <div className="flip-face absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-8">
+            {/* Front — phrase + IPA + speak + grading buttons */}
+            <div
+              className={cn(
+                "flip-face absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl border p-8 transition-colors",
+                justGotIt
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card"
+              )}
+            >
+              {justGotIt && (
+                <div className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
+                  <Check className="size-4" />
+                </div>
+              )}
               <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
                 {current.phrase}
               </p>
-              {/* stopPropagation prevents clicks here from flipping the card */}
-              <div
-                className="flex items-center gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="flex items-center gap-2">
                 <Ipa
                   phraseId={current.id}
                   text={current.phrase}
@@ -278,12 +423,75 @@ export function FlashcardGame({
                 />
                 <SpeakButton text={current.phrase} />
               </div>
-              <p className="absolute bottom-5 text-xs text-muted-foreground">
-                Tap or press Space to flip
-              </p>
+
+              {decided ? (
+                /* After grading via Got it — review (flip) or continue */
+                <div className="mt-2 flex w-full max-w-sm gap-3">
+                  <Button
+                    onClick={toggleFlip}
+                    variant="outline"
+                    aria-label="Flip to see definition"
+                    className="h-auto shrink-0 px-4 py-6"
+                  >
+                    <RotateCw className="size-4" />
+                  </Button>
+                  <Button
+                    onClick={goNext}
+                    className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {index + 1 >= total ? "See results" : "Next"}
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                /* Grading buttons — shown on the FRONT, before any flip */
+                <div className="mt-2 flex w-full max-w-sm gap-3">
+                  <Button
+                    onClick={handleStillLearning}
+                    variant="outline"
+                    className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
+                  >
+                    Still Learning 🔄
+                  </Button>
+                  <Button
+                    onClick={handleGotIt}
+                    className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
+                  >
+                    Got it! ✅
+                  </Button>
+                </div>
+              )}
+
+              {/* Big reward-style burst celebration */}
+              {showBurst && (
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1">
+                  <span className="absolute size-24 rounded-full bg-primary/30 animate-burst-ring" />
+                  <div className="relative flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg animate-pop-in">
+                    <PartyPopper className="size-8" />
+                  </div>
+                  <p className="relative mt-1 animate-pop-in text-4xl font-extrabold text-primary">
+                    {progressStats.learned}
+                  </p>
+                  <p className="relative text-xs font-semibold uppercase tracking-wider text-primary/80">
+                    memorized!
+                  </p>
+                  {[0, 60, 120, 180, 240, 300].map((deg) => (
+                    <span
+                      key={deg}
+                      className="absolute size-1.5 rounded-full bg-primary animate-sparkle-out"
+                      style={
+                        {
+                          "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 90)}px`,
+                          "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 90)}px`,
+                        } as React.CSSProperties
+                      }
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Back — definition + example */}
+            {/* Back — definition + example (only reached via "Still Learning") */}
             <div className="flip-face flip-face-back absolute inset-0 flex flex-col justify-center gap-4 overflow-y-auto rounded-2xl border border-primary/30 bg-card p-8">
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
@@ -302,11 +510,28 @@ export function FlashcardGame({
                   />
                 </div>
               )}
+              <div className="flex gap-3">
+                <Button
+                  onClick={toggleFlip}
+                  variant="outline"
+                  aria-label="Flip back to the phrase"
+                  className="h-auto shrink-0 px-4"
+                >
+                  <RotateCw className="size-4" />
+                </Button>
+                <Button
+                  onClick={goNext}
+                  className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {index + 1 >= total ? "See results" : "Next"}
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
             </div>
-          </button>
+          </div>
         </div>
 
-        {/* Prev / Next navigation */}
+        {/* Prev / Next navigation (skip without grading) */}
         <div className="flex w-full max-w-xl items-center justify-between">
           <Button
             onClick={goPrev}
@@ -331,34 +556,11 @@ export function FlashcardGame({
           </Button>
         </div>
 
-        {/* Answer buttons — only after flip */}
-        <div
-          className={cn(
-            "flex w-full max-w-xl gap-3 transition-opacity duration-200",
-            flipped ? "opacity-100" : "pointer-events-none opacity-0"
-          )}
-        >
-          <Button
-            onClick={() => answer("learning")}
-            variant="outline"
-            className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
-          >
-            Still Learning 🔄
-          </Button>
-          <Button
-            onClick={() => answer("learned")}
-            className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
-          >
-            Got it! ✅
-          </Button>
-        </div>
-
         {/* Keyboard hint */}
         <p className="text-center text-xs text-muted-foreground">
-          <kbd className="rounded bg-card px-1.5 py-0.5">Space</kbd> flip ·{" "}
-          <kbd className="rounded bg-card px-1.5 py-0.5">←</kbd>{" "}
-          <kbd className="rounded bg-card px-1.5 py-0.5">→</kbd> navigate ·{" "}
-          flip first to mark
+          <kbd className="rounded bg-card px-1.5 py-0.5">←</kbd> still learning ·{" "}
+          <kbd className="rounded bg-card px-1.5 py-0.5">→</kbd> got it ·{" "}
+          <kbd className="rounded bg-card px-1.5 py-0.5">Space</kbd> continue
         </p>
       </div>
     </div>

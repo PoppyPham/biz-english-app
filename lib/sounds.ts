@@ -134,6 +134,20 @@ export function playGameOver() {
   })
 }
 
+/**
+ * Bright, satisfying "mastered it!" chime for marking a flashcard as
+ * memorized — bigger than playCorrect, sparkles at the end.
+ */
+export function playMemorized() {
+  const audio = getCtx()
+  if (!audio) return
+  const t = audio.currentTime
+  tone(659.25, t, 0.1, { gain: 0.17 }) // E5
+  tone(830.61, t + 0.07, 0.12, { gain: 0.18 }) // G#5
+  tone(1046.5, t + 0.15, 0.24, { gain: 0.19 }) // C6
+  tone(1567.98, t + 0.18, 0.3, { gain: 0.09, glideTo: 2093 }) // sparkle tail
+}
+
 /** Big celebratory fanfare for beating a high score. */
 export function playHighScore() {
   const audio = getCtx()
