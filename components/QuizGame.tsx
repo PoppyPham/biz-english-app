@@ -10,7 +10,9 @@ import {
   ArrowRight,
   Check,
   X,
-  Star,
+  Heart,
+  Flame,
+  Trophy,
   Share2,
   RotateCcw,
   Timer,
@@ -18,12 +20,21 @@ import {
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
-import { playCorrect, playWrong, playComplete } from "@/lib/sounds"
+import {
+  playStreak,
+  playLifeLost,
+  playExtraLife,
+  playGameOver,
+  playHighScore,
+} from "@/lib/sounds"
 import { ExampleQuote } from "@/components/ExampleQuote"
 import type { Phrase } from "@/lib/types"
 
-const QUIZ_SIZE = 20
-const TIMER_SECONDS = 15
+const TIMER_SECONDS = 20
+const STARTING_LIVES = 3
+const STREAK_FOR_BONUS_LIFE = 10
+const POINTS_CORRECT = 5
+const POINTS_WRONG = 5
 
 interface QuizGameProps {
   phrases: Phrase[]
@@ -50,11 +61,11 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function buildQuestions(phrases: Phrase[]): Question[] {
-  const picked = shuffle(phrases).slice(0, Math.min(QUIZ_SIZE, phrases.length))
-
-  return picked.map((phrase) => {
-    // Distractors: 3 random definitions from OTHER phrases (unique text)
+// One shuffled pass through the whole phrase pool — a "deck". Appended
+// again (reshuffled) whenever it runs out, so the quiz never ends on its
+// own; only running out of lives ends it.
+function buildDeck(phrases: Phrase[]): Question[] {
+  return shuffle(phrases).map((phrase) => {
     const others = phrases.filter(
       (p) => p.id !== phrase.id && p.definition !== phrase.definition
     )
@@ -77,12 +88,30 @@ export function QuizGame({
   categoryName,
   categorySlug,
 }: QuizGameProps) {
+  const scope = categorySlug ?? "all"
+
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)
-  const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
+
+  // Score / lives / streak
+  const [score, setScore] = useState(0)
+  const [lives, setLives] = useState(STARTING_LIVES)
+  const [streak, setStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState(0)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [answeredCount, setAnsweredCount] = useState(0)
+  const [lifeBonusFlash, setLifeBonusFlash] = useState(false)
+  const [lostLifeFlash, setLostLifeFlash] = useState(false)
+  const [popup, setPopup] = useState<{ key: number; delta: number } | null>(null)
+  const popupKey = useRef(0)
+
+  // High score
+  const [highScore, setHighScore] = useState<number | null>(null)
+  const [isNewHighScore, setIsNewHighScore] = useState(false)
+  const [highScoreSaveError, setHighScoreSaveError] = useState(false)
 
   // Timer
   const [timerEnabled, setTimerEnabled] = useState(true)
@@ -93,12 +122,34 @@ export function QuizGame({
 
   const backHref = categorySlug ? `/learn/${categorySlug}` : "/"
 
-  // Build questions on mount (client-only → no hydration mismatch)
+  // Build the first deck on mount (client-only → no hydration mismatch)
   useEffect(() => {
-    setQuestions(buildQuestions(phrases))
+    setQuestions(buildDeck(phrases))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phrases])
 
-  const total = questions.length
+  // Load this user's high score for this scope
+  useEffect(() => {
+    if (!userId) {
+      setHighScore(0)
+      return
+    }
+    let cancelled = false
+    const supabase = createClient()
+    supabase
+      .from("quiz_high_scores")
+      .select("high_score")
+      .eq("user_id", userId)
+      .eq("scope", scope)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setHighScore((data as { high_score: number } | null)?.high_score ?? 0)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, scope])
+
   const current = questions[index]
 
   async function saveResult(phraseId: string, correct: boolean) {
@@ -115,24 +166,81 @@ export function QuizGame({
     )
   }
 
+  function triggerPopup(delta: number) {
+    popupKey.current += 1
+    setPopup({ key: popupKey.current, delta })
+  }
+
   const handleAnswer = useCallback(
     (optionIdx: number | null) => {
-      if (answered || !current) return
+      if (answered || !current || done) return
       setAnswered(true)
       setSelected(optionIdx)
       const correct =
         optionIdx !== null && current.options[optionIdx]?.correct === true
-      if (correct) setScore((s) => s + 1)
-      if (correct) playCorrect()
-      else playWrong()
+
+      setAnsweredCount((c) => c + 1)
+
+      if (correct) {
+        setCorrectCount((c) => c + 1)
+        setScore((s) => s + POINTS_CORRECT)
+        triggerPopup(POINTS_CORRECT)
+        setStreak((s) => {
+          const next = s + 1
+          setBestStreak((b) => Math.max(b, next))
+          if (next % STREAK_FOR_BONUS_LIFE === 0) {
+            setLives((l) => l + 1)
+            setLifeBonusFlash(true)
+            setTimeout(() => setLifeBonusFlash(false), 1800)
+            playExtraLife()
+          } else {
+            playStreak(next)
+          }
+          return next
+        })
+      } else {
+        setScore((s) => Math.max(0, s - POINTS_WRONG))
+        triggerPopup(-POINTS_WRONG)
+        setStreak(0)
+        setLives((l) => Math.max(0, l - 1))
+        setLostLifeFlash(true)
+        setTimeout(() => setLostLifeFlash(false), 500)
+        playLifeLost()
+      }
       void saveResult(current.phrase.id, correct)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [answered, current]
+    [answered, current, done]
   )
 
+  // Game-over side effects: high score save/fanfare, or a game-over tone.
   useEffect(() => {
-    if (done) playComplete()
+    if (!done) return
+    const beatHighScore = !!userId && score > (highScore ?? 0)
+    if (beatHighScore) {
+      // Celebrate immediately — don't gate the dopamine hit on network
+      // latency. If the save turns out to fail, we surface that separately
+      // rather than silently losing the score.
+      setIsNewHighScore(true)
+      setHighScore(score)
+      playHighScore()
+      const supabase = createClient()
+      supabase
+        .from("quiz_high_scores")
+        .upsert(
+          { user_id: userId, scope, high_score: score },
+          { onConflict: "user_id,scope" }
+        )
+        .then(({ error }) => {
+          if (error) {
+            console.error("Failed to save quiz high score:", error)
+            setHighScoreSaveError(true)
+          }
+        })
+    } else {
+      playGameOver()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done])
 
   // Per-question countdown
@@ -153,30 +261,51 @@ export function QuizGame({
   }, [index, timerEnabled, answered, done, current, handleAnswer])
 
   function next() {
-    if (index + 1 >= total) {
+    if (lives <= 0) {
       setDone(true)
-    } else {
-      setIndex((i) => i + 1)
-      setSelected(null)
-      setAnswered(false)
-      setTimeLeft(TIMER_SECONDS)
+      return
     }
+    // Keep the deck topped up so the quiz never runs out on its own.
+    if (index + 1 >= questions.length) {
+      setQuestions((qs) => {
+        let more = buildDeck(phrases)
+        // avoid an immediate repeat right at the seam between decks
+        if (
+          more.length > 1 &&
+          more[0].phrase.id === qs[qs.length - 1]?.phrase.id
+        ) {
+          ;[more[0], more[1]] = [more[1], more[0]]
+        }
+        return [...qs, ...more]
+      })
+    }
+    setIndex((i) => i + 1)
+    setSelected(null)
+    setAnswered(false)
+    setTimeLeft(TIMER_SECONDS)
   }
 
   function restart() {
-    setQuestions(buildQuestions(phrases))
+    setQuestions(buildDeck(phrases))
     setIndex(0)
     setSelected(null)
     setAnswered(false)
     setScore(0)
+    setLives(STARTING_LIVES)
+    setStreak(0)
+    setBestStreak(0)
+    setCorrectCount(0)
+    setAnsweredCount(0)
+    setIsNewHighScore(false)
+    setHighScoreSaveError(false)
     setDone(false)
     setTimeLeft(TIMER_SECONDS)
   }
 
-  async function share(pct: number, stars: number) {
-    const text = `I scored ${score}/${total} (${pct}%) ${"⭐".repeat(
-      stars
-    )} on the BizEnglish ${categoryName} quiz!`
+  async function share(accuracy: number) {
+    const text = isNewHighScore
+      ? `New high score of ${score} on the BizEnglish ${categoryName} quiz! 🏆`
+      : `I scored ${score} points (${accuracy}% accuracy, ${bestStreak}-streak) on the BizEnglish ${categoryName} quiz!`
     try {
       if (navigator.share) {
         await navigator.share({ title: "BizEnglish Quiz", text })
@@ -191,7 +320,7 @@ export function QuizGame({
   }
 
   // ── Loading ──
-  if (total === 0) {
+  if (questions.length === 0 || highScore === null) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
@@ -201,55 +330,71 @@ export function QuizGame({
 
   // ── End screen ──
   if (done) {
-    const pct = Math.round((score / total) * 100)
-    const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0
-    const message =
-      stars === 3
-        ? "Outstanding! 🏆"
-        : stars === 2
-        ? "Great job! 👏"
-        : stars === 1
-        ? "Good effort! 👍"
-        : "Keep practicing! 💪"
+    const accuracy =
+      answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">{message}</h1>
-
-        {/* Stars */}
-        <div className="flex gap-2">
-          {[0, 1, 2].map((i) => (
-            <Star
-              key={i}
-              className={cn(
-                "size-10 transition-colors animate-in zoom-in-50 fade-in duration-300",
-                i === 0 && "delay-0",
-                i === 1 && "delay-150",
-                i === 2 && "delay-300",
-                i < stars
-                  ? "fill-primary text-primary"
-                  : "fill-transparent text-border"
-              )}
-            />
-          ))}
-        </div>
+        {isNewHighScore ? (
+          <div className="flex flex-col items-center gap-2 animate-in zoom-in-50 fade-in duration-500">
+            <Trophy className="size-12 text-amber-400" />
+            <h1 className="text-2xl font-bold tracking-tight text-amber-400">
+              New high score! 🎉
+            </h1>
+          </div>
+        ) : (
+          <h1 className="text-2xl font-bold tracking-tight">
+            Game over — out of lives 💔
+          </h1>
+        )}
 
         <div className="flex flex-col items-center gap-1">
-          <p className="text-4xl font-bold">
-            <span className="text-primary">{score}</span>
-            <span className="text-muted-foreground"> / {total}</span>
+          <p className="text-5xl font-bold">
+            <span className={isNewHighScore ? "text-amber-400" : "text-primary"}>
+              {score}
+            </span>
           </p>
-          <p className="text-sm text-muted-foreground">{pct}% correct</p>
+          <p className="text-sm text-muted-foreground">points</p>
+          {userId && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <Trophy className="size-3" />
+              Best: {highScore}
+            </p>
+          )}
           {!userId && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in to save your progress.
+              Sign in to save your high score.
+            </p>
+          )}
+          {highScoreSaveError && (
+            <p className="mt-1 text-xs text-rose-400">
+              Couldn&apos;t save your score — check your connection and try
+              again.
             </p>
           )}
         </div>
 
+        <div className="flex gap-6 text-sm">
+          <div className="flex flex-col items-center">
+            <span className="text-xl font-bold text-primary">{accuracy}%</span>
+            <span className="text-xs text-muted-foreground">Accuracy</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="flex items-center gap-1 text-xl font-bold text-amber-400">
+              <Flame className="size-4" />
+              {bestStreak}
+            </span>
+            <span className="text-xs text-muted-foreground">Best streak</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-xl font-bold">{answeredCount}</span>
+            <span className="text-xs text-muted-foreground">Questions</span>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
-            onClick={() => share(pct, stars)}
+            onClick={() => share(accuracy)}
             className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Share2 className="size-4" />
@@ -271,10 +416,18 @@ export function QuizGame({
   }
 
   // ── Active question ──
-  const progressPct = Math.round((index / total) * 100)
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Bonus-life celebration banner */}
+      {lifeBonusFlash && (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-4 py-2 text-sm font-semibold text-primary shadow-lg backdrop-blur">
+            <Heart className="size-4 fill-primary" />
+            +1 Life! {streak}-streak bonus
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -289,18 +442,57 @@ export function QuizGame({
             {categoryName}
           </span>
           <SoundToggle className="ml-auto" />
-          <span className="shrink-0 text-sm font-medium tabular-nums">
-            <span className="text-primary">{score}</span> / {total}
-          </span>
         </div>
 
-        {/* Question progress */}
-        <div className="mx-auto mt-2 max-w-2xl">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+        {/* Score / streak / lives HUD */}
+        <div className="mx-auto mt-3 flex max-w-2xl items-center justify-between gap-3">
+          <div className="relative flex items-baseline gap-2">
+            <span className="text-2xl font-bold tabular-nums text-primary">
+              {score}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              · best {highScore}
+            </span>
+            {popup && (
+              <span
+                key={popup.key}
+                onAnimationEnd={() => setPopup(null)}
+                className={cn(
+                  "pointer-events-none absolute -top-1 left-full ml-1 text-base font-bold animate-float-up",
+                  popup.delta > 0 ? "text-primary" : "text-rose-400"
+                )}
+              >
+                {popup.delta > 0 ? `+${popup.delta}` : popup.delta}
+              </span>
+            )}
+          </div>
+
+          {streak >= 2 && (
             <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progressPct}%` }}
-            />
+              key={streak}
+              className={cn(
+                "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold animate-pop-in",
+                streak >= 10
+                  ? "border-amber-400/50 bg-amber-400/10 text-amber-400"
+                  : streak >= 5
+                  ? "border-orange-400/50 bg-orange-400/10 text-orange-400"
+                  : "border-primary/40 bg-primary/10 text-primary"
+              )}
+            >
+              <Flame className="size-3.5" />
+              {streak} streak
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "flex items-center gap-1",
+              lostLifeFlash && "animate-shake"
+            )}
+          >
+            {Array.from({ length: lives }).map((_, i) => (
+              <Heart key={i} className="size-4 fill-rose-500 text-rose-500" />
+            ))}
           </div>
         </div>
       </div>
@@ -414,8 +606,8 @@ export function QuizGame({
                 {selected === null
                   ? "⏱ Time's up!"
                   : current.options[selected]?.correct
-                  ? "✓ Correct!"
-                  : "✗ Not quite."}
+                  ? `✓ Correct! +${POINTS_CORRECT}`
+                  : `✗ Not quite. -${POINTS_WRONG}`}
               </p>
               {current.phrase.example && (
                 <ExampleQuote
@@ -430,7 +622,7 @@ export function QuizGame({
               onClick={next}
               className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
             >
-              {index + 1 >= total ? "See results" : "Next"}
+              {lives <= 0 ? "See results" : "Next"}
               <ArrowRight className="size-4" />
             </Button>
           </div>
