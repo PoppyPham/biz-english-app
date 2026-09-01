@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { MyWordsClient } from "@/components/MyWordsClient"
 import { ArrowLeft } from "lucide-react"
-import { YOUR_WORDS, type Phrase } from "@/lib/types"
+import { YOUR_WORDS, type Category, type Phrase } from "@/lib/types"
 
 export default async function MyWordsPage() {
   const supabase = await createClient()
@@ -16,13 +16,20 @@ export default async function MyWordsPage() {
     redirect("/auth/login?message=Login%20to%20manage%20your%20words")
   }
 
-  const { data: words } = await supabase
-    .from("phrases")
-    .select(
-      "id, phrase, definition, example, category_id, owner_id, is_public, ipa"
-    )
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
+  const [{ data: words }, { data: myCats }] = await Promise.all([
+    supabase
+      .from("phrases")
+      .select(
+        "id, phrase, definition, example, category_id, owner_id, is_public, ipa"
+      )
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("categories")
+      .select("id, name, slug, emoji, sort_order")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: true }),
+  ])
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,6 +56,7 @@ export default async function MyWordsPage() {
         <MyWordsClient
           userId={user.id}
           initial={(words ?? []) as Phrase[]}
+          categories={(myCats ?? []) as Category[]}
         />
       </div>
     </div>

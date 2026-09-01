@@ -20,10 +20,22 @@ import { cn } from "@/lib/utils"
 import { fetchPronunciation } from "@/lib/dictionary"
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
-import type { Phrase } from "@/lib/types"
+import type { Category, Phrase } from "@/lib/types"
 
-type Draft = { phrase: string; definition: string; example: string; ipa: string }
-const EMPTY: Draft = { phrase: "", definition: "", example: "", ipa: "" }
+type Draft = {
+  phrase: string
+  definition: string
+  example: string
+  ipa: string
+  categoryId: string // "" = Your Words (uncategorized)
+}
+const EMPTY: Draft = {
+  phrase: "",
+  definition: "",
+  example: "",
+  ipa: "",
+  categoryId: "",
+}
 
 // Defined at module scope (NOT inside MyWordsClient) so its identity is stable
 // across renders — otherwise React remounts the form on every keystroke, which
@@ -31,6 +43,7 @@ const EMPTY: Draft = { phrase: "", definition: "", example: "", ipa: "" }
 function DraftForm({
   draft,
   setDraft,
+  categories,
   error,
   busy,
   editing,
@@ -39,6 +52,7 @@ function DraftForm({
 }: {
   draft: Draft
   setDraft: React.Dispatch<React.SetStateAction<Draft>>
+  categories: Category[]
   error: string
   busy: boolean
   editing: boolean
@@ -50,6 +64,25 @@ function DraftForm({
       onSubmit={onSubmit}
       className="space-y-3 rounded-xl border border-primary/30 bg-card p-4"
     >
+      {categories.length > 0 && (
+        <Field label="Category" htmlFor="d-cat">
+          <select
+            id="d-cat"
+            value={draft.categoryId}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, categoryId: e.target.value }))
+            }
+            className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus-visible:outline-none focus-visible:border-ring dark:bg-input/30"
+          >
+            <option value="">⭐ Your Words (no category)</option>
+            {categories.map((c) => (
+              <option key={c.id} value={String(c.id)}>
+                {c.emoji} {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <Field label="Phrase" htmlFor="d-phrase">
         <Input
           id="d-phrase"
@@ -119,9 +152,14 @@ function DraftForm({
 interface MyWordsClientProps {
   userId: string
   initial: Phrase[]
+  categories: Category[]
 }
 
-export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
+export function MyWordsClient({
+  userId,
+  initial,
+  categories,
+}: MyWordsClientProps) {
   const [words, setWords] = useState<Phrase[]>(initial)
   const [creating, setCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -149,7 +187,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
       .from("phrases")
       .insert({
         owner_id: userId,
-        category_id: null,
+        category_id: draft.categoryId ? Number(draft.categoryId) : null,
         is_public: false,
         phrase: draft.phrase.trim(),
         definition: draft.definition.trim(),
@@ -188,6 +226,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
         definition: draft.definition.trim(),
         example: draft.example.trim(),
         ipa: draft.ipa.trim() || null,
+        category_id: draft.categoryId ? Number(draft.categoryId) : null,
       })
       .eq("id", editingId)
 
@@ -205,6 +244,9 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
               definition: draft.definition.trim(),
               example: draft.example.trim(),
               ipa: draft.ipa.trim() || null,
+              category_id: draft.categoryId
+                ? String(draft.categoryId)
+                : null,
             }
           : w
       )
@@ -256,6 +298,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
       definition: word.definition,
       example: word.example ?? "",
       ipa: word.ipa ?? "",
+      categoryId: word.category_id ? String(word.category_id) : "",
     })
   }
 
@@ -266,6 +309,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
         <DraftForm
           draft={draft}
           setDraft={setDraft}
+          categories={categories}
           error={error}
           busy={busy}
           editing={false}
@@ -303,6 +347,7 @@ export function MyWordsClient({ userId, initial }: MyWordsClientProps) {
                 key={word.id}
                 draft={draft}
                 setDraft={setDraft}
+                categories={categories}
                 error={error}
                 busy={busy}
                 editing

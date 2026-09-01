@@ -320,6 +320,20 @@ export default async function HomePage() {
                 </Card>
               </Link>
             ))}
+
+            {/* New category tile */}
+            {user && (
+              <Link href="/categories" className="group">
+                <Card className="flex h-full min-h-[7rem] cursor-pointer flex-col items-center justify-center gap-2 border-dashed border-border bg-card/50 p-4 text-center ring-0 transition-colors hover:border-primary/50 hover:bg-card">
+                  <div className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                    <Plus className="size-4 text-primary" />
+                  </div>
+                  <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                    New category
+                  </p>
+                </Card>
+              </Link>
+            )}
           </div>
         </section>
 
