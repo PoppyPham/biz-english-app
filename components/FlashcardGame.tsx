@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  RotateCw,
+  FlipHorizontal2,
   Repeat,
   Sparkles,
   Check,
@@ -128,9 +128,16 @@ export function FlashcardGame({
 
   // Once a card has been graded, let the user flip back and forth to
   // review — not available before deciding, so the front→back order stays
-  // intentional (decide first, then peek).
+  // intentional (decide first, then peek). Flipping manually means "let me
+  // read this properly" — cancel any pending Got-it auto-advance so it
+  // doesn't yank the card away mid-review.
   function toggleFlip() {
     if (!decided) return
+    if (burstTimeout.current) {
+      clearTimeout(burstTimeout.current)
+      burstTimeout.current = null
+    }
+    setShowBurst(false)
     setFlipped((f) => !f)
   }
 
@@ -140,19 +147,25 @@ export function FlashcardGame({
     setJustGotIt(true)
     setResults((r) => ({ ...r, [current.id]: "learned" }))
     setProgressMap((m) => ({ ...m, [current.id]: "learned" }))
-    popupKey.current += 1
-    setMemorizedPopup(popupKey.current)
-    playMemorized()
     void saveResult(current.id, "learned")
 
-    // Big reward-style celebration — stays until the user is ready to move
-    // on (they can flip to peek at the definition first via the rotate
-    // button, or just hit Next).
-    setShowBurst(true)
-    if (burstTimeout.current) clearTimeout(burstTimeout.current)
-    burstTimeout.current = setTimeout(() => setShowBurst(false), 1100)
+    // Say the word first, then celebrate — so the reward doesn't talk over
+    // the pronunciation. Once the burst finishes, move on automatically
+    // (the user can still flip to peek or hit Next early; either cancels
+    // this pending advance).
+    speakText(current.phrase, "en-US", () => {
+      playMemorized()
+      popupKey.current += 1
+      setMemorizedPopup(popupKey.current)
+      setShowBurst(true)
+      if (burstTimeout.current) clearTimeout(burstTimeout.current)
+      burstTimeout.current = setTimeout(() => {
+        setShowBurst(false)
+        goToIndex(index + 1)
+      }, 1100)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, decided, done])
+  }, [current, decided, done, index])
 
   const handleStillLearning = useCallback(() => {
     if (!current || decided || done) return
@@ -343,11 +356,16 @@ export function FlashcardGame({
             />
           </div>
         </div>
+      </div>
 
-        {/* Overall memorized-so-far bar — the "excitement about progress" HUD */}
+      {/* Card area */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
+        {/* Overall memorized-so-far bar — the "excitement about progress" HUD.
+            Lives in the main content area (not the cramped top bar) so it has
+            room to breathe at a readable size. */}
         {userId && progressStats.total > 0 && (
-          <div className="mx-auto mt-2 max-w-2xl">
-            <div className="relative flex h-2 w-full overflow-hidden rounded-full bg-card">
+          <div className="w-full max-w-xl">
+            <div className="relative flex h-3.5 w-full overflow-hidden rounded-full bg-card">
               {progressStats.learned > 0 && (
                 <div
                   className="h-full bg-primary transition-all duration-500"
@@ -364,168 +382,177 @@ export function FlashcardGame({
                 <span
                   key={memorizedPopup}
                   onAnimationEnd={() => setMemorizedPopup(null)}
-                  className="pointer-events-none absolute -top-1 right-0 text-sm font-bold text-primary animate-float-up"
+                  className="pointer-events-none absolute -top-1 right-0 text-base font-bold text-primary animate-float-up"
                 >
                   +1
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              <span className="font-medium text-primary">
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              <span className="font-semibold text-primary">
                 {progressStats.learned}
               </span>{" "}
               memorized ·{" "}
-              <span className="font-medium text-amber-400">
+              <span className="font-semibold text-amber-400">
                 {progressStats.learning}
               </span>{" "}
-              learning · {progressStats.total} total in {categoryName}
+              learning ·{" "}
+              <span className="font-medium text-foreground">
+                {progressStats.total}
+              </span>{" "}
+              total in {categoryName}
             </p>
           </div>
         )}
-      </div>
 
-      {/* Card area */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8">
-        {/* Flip card */}
-        <div
-          key={current.id}
-          className="flip-scene relative w-full max-w-xl animate-in fade-in zoom-in-95 duration-200"
-        >
+        {/* Wrapper — burst renders above this, outside the card */}
+        <div className="relative w-full max-w-xl">
+          {/* Big reward-style burst — floats ABOVE the card, never covers the word */}
+          {showBurst && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 mb-3 flex flex-col items-center gap-0.5">
+              <span className="absolute top-4 size-20 rounded-full bg-primary/30 animate-burst-ring" />
+              <div className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg animate-pop-in">
+                <PartyPopper className="size-7" />
+              </div>
+              <p className="relative animate-pop-in text-3xl font-extrabold text-primary">
+                {progressStats.learned}
+              </p>
+              <p className="relative text-[11px] font-semibold uppercase tracking-wider text-primary/80">
+                memorized!
+              </p>
+              {[0, 60, 120, 180, 240, 300].map((deg) => (
+                <span
+                  key={deg}
+                  className="absolute top-4 size-1.5 rounded-full bg-primary animate-sparkle-out"
+                  style={
+                    {
+                      "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 70)}px`,
+                      "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 70)}px`,
+                    } as React.CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Flip card */}
           <div
-            className={cn(
-              "flip-card aspect-[3/2] w-full",
-              flipped && "is-flipped"
-            )}
+            key={current.id}
+            className="flip-scene animate-in fade-in zoom-in-95 duration-200"
           >
-            {/* Front — phrase + IPA + speak + grading buttons */}
             <div
               className={cn(
-                "flip-face absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl border p-8 transition-colors",
-                justGotIt
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-card"
+                "flip-card aspect-[3/2] w-full",
+                flipped && "is-flipped"
               )}
             >
-              {justGotIt && (
-                <div className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
-                  <Check className="size-4" />
-                </div>
-              )}
-              <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
-                {current.phrase}
-              </p>
-              <div className="flex items-center gap-2">
-                <Ipa
-                  phraseId={current.id}
-                  text={current.phrase}
-                  initialIpa={current.ipa}
-                  className="text-sm"
-                />
-                <SpeakButton text={current.phrase} />
-              </div>
+              {/* Front — phrase + IPA + speak, decide, then act */}
+              <div
+                className={cn(
+                  "flip-face absolute inset-0 flex flex-col rounded-2xl border p-6 transition-colors md:p-8",
+                  justGotIt
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card"
+                )}
+              >
+                {justGotIt && (
+                  <div className="absolute right-4 top-4 z-10 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground animate-in zoom-in-50 fade-in duration-200">
+                    <Check className="size-4" />
+                  </div>
+                )}
 
-              {decided ? (
-                /* After grading via Got it — review (flip) or continue */
-                <div className="mt-2 flex w-full max-w-sm gap-3">
-                  <Button
-                    onClick={toggleFlip}
-                    variant="outline"
-                    aria-label="Flip to see definition"
-                    className="h-auto shrink-0 px-4 py-6"
-                  >
-                    <RotateCw className="size-4" />
-                  </Button>
+                {/* Content — centered in the space above the action row */}
+                <div className="flex flex-1 flex-col items-center justify-center gap-3">
+                  <p className="text-center text-2xl font-bold leading-snug md:text-3xl">
+                    {current.phrase}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Ipa
+                      phraseId={current.id}
+                      text={current.phrase}
+                      initialIpa={current.ipa}
+                      className="text-sm"
+                    />
+                    <SpeakButton text={current.phrase} />
+                  </div>
+
+                  {decided && (
+                    <button
+                      type="button"
+                      onClick={toggleFlip}
+                      aria-label="Flip to see definition"
+                      className="mt-1 flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                    >
+                      <FlipHorizontal2 className="size-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Action row — pinned to the bottom of the card */}
+                {decided ? (
                   <Button
                     onClick={goNext}
-                    className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
+                  >
+                    {index + 1 >= total ? "See results" : "Next"}
+                    <ChevronRight className="size-4" />
+                  </Button>
+                ) : (
+                  <div className="flex w-full gap-3">
+                    <Button
+                      onClick={handleStillLearning}
+                      variant="outline"
+                      className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
+                    >
+                      Still Learning 🔄
+                    </Button>
+                    <Button
+                      onClick={handleGotIt}
+                      className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
+                    >
+                      Got it! ✅
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Back — definition + example (only reached via "Still Learning" or the rotate button) */}
+              <div className="flip-face flip-face-back absolute inset-0 flex flex-col rounded-2xl border border-primary/30 bg-card p-6 md:p-8">
+                <div className="flex-1 overflow-y-auto">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                    Definition
+                  </p>
+                  <p className="leading-relaxed">{current.definition}</p>
+                  {current.example && (
+                    <div className="mt-4">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Example
+                      </p>
+                      <ExampleQuote
+                        text={current.example}
+                        lineClassName="italic leading-relaxed text-muted-foreground"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-center gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={toggleFlip}
+                    aria-label="Flip back to the phrase"
+                    className="flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-border-hover hover:text-foreground active:scale-95"
+                  >
+                    <FlipHorizontal2 className="size-4" />
+                  </button>
+                  <Button
+                    onClick={goNext}
+                    className="w-full gap-1.5 bg-primary py-6 text-primary-foreground hover:bg-primary/90"
                   >
                     {index + 1 >= total ? "See results" : "Next"}
                     <ChevronRight className="size-4" />
                   </Button>
                 </div>
-              ) : (
-                /* Grading buttons — shown on the FRONT, before any flip */
-                <div className="mt-2 flex w-full max-w-sm gap-3">
-                  <Button
-                    onClick={handleStillLearning}
-                    variant="outline"
-                    className="flex-1 border-amber-500/40 py-6 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 active:scale-95 transition-transform"
-                  >
-                    Still Learning 🔄
-                  </Button>
-                  <Button
-                    onClick={handleGotIt}
-                    className="flex-1 border border-primary/40 bg-primary/10 py-6 text-primary hover:bg-primary/20 active:scale-95 transition-transform"
-                  >
-                    Got it! ✅
-                  </Button>
-                </div>
-              )}
-
-              {/* Big reward-style burst celebration */}
-              {showBurst && (
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1">
-                  <span className="absolute size-24 rounded-full bg-primary/30 animate-burst-ring" />
-                  <div className="relative flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg animate-pop-in">
-                    <PartyPopper className="size-8" />
-                  </div>
-                  <p className="relative mt-1 animate-pop-in text-4xl font-extrabold text-primary">
-                    {progressStats.learned}
-                  </p>
-                  <p className="relative text-xs font-semibold uppercase tracking-wider text-primary/80">
-                    memorized!
-                  </p>
-                  {[0, 60, 120, 180, 240, 300].map((deg) => (
-                    <span
-                      key={deg}
-                      className="absolute size-1.5 rounded-full bg-primary animate-sparkle-out"
-                      style={
-                        {
-                          "--sx": `${Math.round(Math.cos((deg * Math.PI) / 180) * 90)}px`,
-                          "--sy": `${Math.round(Math.sin((deg * Math.PI) / 180) * 90)}px`,
-                        } as React.CSSProperties
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Back — definition + example (only reached via "Still Learning") */}
-            <div className="flip-face flip-face-back absolute inset-0 flex flex-col justify-center gap-4 overflow-y-auto rounded-2xl border border-primary/30 bg-card p-8">
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                  Definition
-                </p>
-                <p className="leading-relaxed">{current.definition}</p>
-              </div>
-              {current.example && (
-                <div>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Example
-                  </p>
-                  <ExampleQuote
-                    text={current.example}
-                    lineClassName="italic leading-relaxed text-muted-foreground"
-                  />
-                </div>
-              )}
-              <div className="flex gap-3">
-                <Button
-                  onClick={toggleFlip}
-                  variant="outline"
-                  aria-label="Flip back to the phrase"
-                  className="h-auto shrink-0 px-4"
-                >
-                  <RotateCw className="size-4" />
-                </Button>
-                <Button
-                  onClick={goNext}
-                  className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  {index + 1 >= total ? "See results" : "Next"}
-                  <ChevronRight className="size-4" />
-                </Button>
               </div>
             </div>
           </div>
@@ -536,7 +563,7 @@ export function FlashcardGame({
           <Button
             onClick={goPrev}
             disabled={index === 0}
-            variant="outline"
+            variant="secondary"
             size="sm"
             className="gap-1.5"
           >
@@ -548,7 +575,7 @@ export function FlashcardGame({
           <Button
             onClick={goNext}
             disabled={index >= total - 1}
-            variant="outline"
+            variant="secondary"
             size="sm"
             className="gap-1.5"
           >

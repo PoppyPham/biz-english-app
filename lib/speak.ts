@@ -20,8 +20,15 @@ function pickVoice(synth: SpeechSynthesis): SpeechSynthesisVoice | null {
   return cachedVoice
 }
 
-export function speakText(text: string, lang = "en-US") {
-  if (typeof window === "undefined" || !window.speechSynthesis) return
+// onEnd (optional) fires when the utterance finishes — lets callers
+// sequence something (e.g. a celebration) to happen right after the word
+// is spoken, not simultaneously with it. Fires even if speech synthesis is
+// unavailable, so callers never hang waiting on it.
+export function speakText(text: string, lang = "en-US", onEnd?: () => void) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onEnd?.()
+    return
+  }
   const synth = window.speechSynthesis
 
   const utterance = new SpeechSynthesisUtterance(text)
@@ -29,6 +36,10 @@ export function speakText(text: string, lang = "en-US") {
   utterance.rate = 0.9 // a touch slower → clearer, less shrill
   utterance.pitch = 1
   utterance.volume = 0.85 // soften it a bit
+  if (onEnd) {
+    utterance.onend = () => onEnd()
+    utterance.onerror = () => onEnd() // don't leave callers hanging on failure
+  }
 
   const voice = pickVoice(synth)
   if (voice) utterance.voice = voice
