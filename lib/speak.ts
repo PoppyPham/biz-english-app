@@ -33,8 +33,8 @@ export function speakText(text: string, lang = "en-US", onEnd?: () => void) {
 
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = lang
-  utterance.rate = 0.9 // a touch slower → clearer, less shrill
-  utterance.pitch = 1
+  utterance.rate = 0.88 // a touch slower → clearer, more deliberate
+  utterance.pitch = 0.85 // a bit deeper/warmer than the raw voice default
   utterance.volume = 0.85 // soften it a bit
   if (onEnd) {
     utterance.onend = () => onEnd()

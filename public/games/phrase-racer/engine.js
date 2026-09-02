@@ -148,8 +148,8 @@
       if (!text || !window.speechSynthesis) return;
       var u = new SpeechSynthesisUtterance(text);
       u.lang = "en-US";
-      u.rate = 0.9;
-      u.pitch = 1;
+      u.rate = 0.88;
+      u.pitch = 0.85;
       u.volume = 0.85;
       var voice = pickVoice();
       if (voice) u.voice = voice;
@@ -959,6 +959,37 @@
       ctx.closePath();
     }
 
+    // Draws a user-supplied image centered inside (boxX,boxY,boxW,boxH),
+    // scaled to fit (not stretched) — a custom ship/planet image can be any
+    // aspect ratio, and stretching it to force-fill the box would distort it.
+    function drawImageContain(img, boxX, boxY, boxW, boxH) {
+      var iw = img.naturalWidth || img.width;
+      var ih = img.naturalHeight || img.height;
+      if (!iw || !ih) return;
+      var scale = Math.min(boxW / iw, boxH / ih);
+      var dw = iw * scale, dh = ih * scale;
+      var dx = boxX + (boxW - dw) / 2;
+      var dy = boxY + (boxH - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
+    // Same fit-not-stretch scaling as drawImageContain, but anchored to the
+    // LEFT edge of the box instead of centered horizontally. The ship's
+    // engine glow is always drawn at local x=0 (the tail end of the
+    // bounding box) — if a narrower-than-2:1 image were instead centered,
+    // it would be inset from x=0 and the flame would appear to float away
+    // from the tail. Anchoring left keeps the tail flush at x=0 for any
+    // image aspect ratio, so the glow always lines up.
+    function drawImageContainLeft(img, boxX, boxY, boxW, boxH) {
+      var iw = img.naturalWidth || img.width;
+      var ih = img.naturalHeight || img.height;
+      if (!iw || !ih) return;
+      var scale = Math.min(boxW / iw, boxH / ih);
+      var dw = iw * scale, dh = ih * scale;
+      var dy = boxY + (boxH - dh) / 2;
+      ctx.drawImage(img, boxX, dy, dw, dh);
+    }
+
     function drawSpace(w, h) {
       var g = ctx.createLinearGradient(0, 0, 0, h);
       g.addColorStop(0, COLORS.spaceTop);
@@ -1041,7 +1072,7 @@
           var img = readyPlanetImages[Math.floor(pseudoRandom(ki * 17.3) * readyPlanetImages.length)];
           var yi = h * (0.08 + pseudoRandom(ki * 9.1) * 0.62);
           var size = h * (0.09 + pseudoRandom(ki * 4.4) * 0.22);
-          ctx.drawImage(img, xi - size / 2, yi - size / 2, size, size);
+          drawImageContain(img, xi - size / 2, yi - size / 2, size, size);
         }
         return;
       }
@@ -1231,7 +1262,7 @@
       var bestDistanceM = typeof opts.getBestDistanceM === "function" ? opts.getBestDistanceM() : 0;
       var shipImgEntry = shipImages[pickShipTierFile(bestDistanceM)];
       if (shipImgEntry && shipImgEntry.ready && !flashOn) {
-        ctx.drawImage(shipImgEntry.img, 0, 0, shipW, shipH);
+        drawImageContainLeft(shipImgEntry.img, 0, 0, shipW, shipH);
       } else {
         drawShipBody(shipW, shipH, flashOn);
       }
@@ -1532,7 +1563,8 @@
       ".pr-root{display:flex;flex-direction:column;height:100%;width:100%;background:var(--pr-bg);color:var(--pr-fg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}",
       ".pr-canvas-wrap{position:relative;flex:2 1 0;min-height:0;overflow:hidden;background:var(--pr-bg);}",
       ".pr-canvas{position:absolute;inset:0;display:block;}",
-      ".pr-hud{position:absolute;inset:0;pointer-events:none;padding:10px 10px 8px;display:flex;flex-direction:column;gap:6px;}",
+      ".pr-hud{position:absolute;inset:0;pointer-events:none;padding:10px 10px 8px;display:flex;flex-direction:column;justify-content:space-between;}",
+      ".pr-hud-topgroup{display:flex;flex-direction:column;gap:6px;}",
       ".pr-hud-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
       ".pr-hud-chip{background:rgba(12,16,14,0.72);border:1px solid var(--pr-border);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;white-space:nowrap;}",
       ".pr-hud-lives{color:var(--pr-red);letter-spacing:1px;}",
@@ -1565,7 +1597,7 @@
       ".pr-celebrate.pr-show{opacity:1;transform:translate(-50%,-50%) scale(1);}",
       ".pr-celebrate-word{font-size:26px;font-weight:800;color:var(--pr-primary);text-shadow:0 2px 12px rgba(34,197,94,0.6);}",
       ".pr-celebrate-sub{margin-top:2px;font-size:13px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.8);}",
-      ".pr-continue-btn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--pr-primary);color:var(--pr-primary-fg);border:none;border-radius:999px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,0.4);}",
+      ".pr-continue-btn{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:var(--pr-primary);color:var(--pr-primary-fg);border:none;border-radius:999px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,0.4);}",
       ".pr-continue-btn.pr-hidden{display:none;}",
       ".pr-continue-btn:active{transform:translateX(-50%) scale(0.96);}",
     ].join("\n");
@@ -1581,12 +1613,14 @@
         '<div class="pr-canvas-wrap">' +
           '<canvas class="pr-canvas"></canvas>' +
           '<div class="pr-hud">' +
-            '<div class="pr-hud-top">' +
-              '<div class="pr-hud-lives pr-hud-chip">❤️❤️❤️</div>' +
-              '<div class="pr-hud-distance pr-hud-chip">0 m</div>' +
-              '<div class="pr-hud-speed pr-hud-chip">20 km/h</div>' +
+            '<div class="pr-hud-topgroup">' +
+              '<div class="pr-hud-top">' +
+                '<div class="pr-hud-lives pr-hud-chip">❤️❤️❤️</div>' +
+                '<div class="pr-hud-distance pr-hud-chip">0 m</div>' +
+                '<div class="pr-hud-speed pr-hud-chip">20 km/h</div>' +
+              '</div>' +
+              '<div class="pr-nitro-badge pr-hidden">⚡ NITRO</div>' +
             '</div>' +
-            '<div class="pr-nitro-badge pr-hidden">⚡ NITRO</div>' +
             '<div class="pr-timer-bar-wrap"><div class="pr-timer-bar"></div></div>' +
           '</div>' +
           '<div class="pr-celebrate pr-hidden"></div>' +

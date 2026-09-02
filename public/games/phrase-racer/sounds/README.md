@@ -41,3 +41,18 @@ synthesized sound automatically.
 
 You don't need to provide all seven — add just the ones you want to
 change and leave the rest as-is.
+
+## About the sample files currently in this folder
+
+`wrong.mp3`, `nitro.mp3`, and `crash.mp3` are sound effects from Kenney's
+"Space Shooter Redux" pack (CC0 / public domain, no attribution required
+— https://kenney.nl/assets/space-shooter-extension). `correct.mp3` is a
+4-note ascending percussion phrase from Kenney's "Music Jingles" pack
+(also CC0 — https://kenney.nl/assets/music-jingles). All were converted
+from the packs' `.ogg` format to WAV so Safari/iOS can decode them too
+(they keep the `.mp3` extension for consistency with the naming above,
+but the browser decodes by content, not extension, so this works fine —
+export your own replacements as real MP3s as usual). Swap them for your
+own recordings whenever you like — they're a working starting point, not
+final audio. `engine-loop.mp3`, `extra-life.mp3`, and `game-over.mp3`
+aren't provided, so those three still use the built-in synthesis.

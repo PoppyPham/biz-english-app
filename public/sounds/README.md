@@ -39,3 +39,14 @@ the built-in synthesized sound automatically.
 
 You don't need to provide all of them — add just the ones you want to
 change and leave the rest as the built-in sound.
+
+## About the sample files currently in this folder
+
+`streak.mp3` is a 4-note ascending percussion phrase from Kenney's "Music
+Jingles" pack (CC0 / public domain — https://kenney.nl/assets/music-jingles).
+`celebrate.mp3` and `high-score.mp3` layer one of those jingle phrases
+(saxophone for celebrate, percussion for high-score) with a short real
+crowd-applause clip (CC0, recorded by Joseph SARDIN —
+https://bigsoundbank.com/applause-1-s1765.html) for a bigger reward
+moment. Swap any of these for your own audio whenever you like — they're
+a working starting point, not final sound design.

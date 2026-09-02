@@ -21,9 +21,14 @@ Racer tab).
 
 **Orientation matters**: draw the ship facing **right** (nose/front on the
 right edge of the image, engine/tail on the left) — that's the direction
-it flies relative to the oncoming asteroids. A transparent PNG works best;
-the image is stretched to fill the ship's bounding box, so keep it roughly
-2:1 (width:height).
+it flies relative to the oncoming asteroids. A transparent PNG works best.
+The image is scaled to *fit* the ship's bounding box (never stretched/
+distorted, any aspect ratio works) and is anchored to the **left edge**
+(the tail) so the engine glow — drawn separately, always at the box's
+left edge — lines up with your art regardless of its exact proportions.
+**Reference size: 200×100px (a 2:1 width:height box)** — matching that
+ratio uses the full box with no empty margin; anything narrower just
+leaves empty space on the right (toward the nose), which is harmless.
 
 Note: the very brief red "hit" flash on crash still uses the drawn ship,
 not your image — recoloring an arbitrary PNG on the fly isn't practical,
@@ -56,3 +61,16 @@ A category with its own subfolder uses only those images; every other
 category (and "all categories" / "Your Words") uses the shared ones
 directly in `planets/`. If neither exists, planets fall back to the
 built-in drawn variety (colors, rings, bands).
+
+## About the sample files currently in this folder
+
+`ship-1/2/3.png` are Kenney's "Space Shooter Redux" pack
+(CC0 / public domain, no attribution required — https://kenney.nl/assets/space-shooter-extension),
+rotated 90° to face right. `planets/planet-1.png` (Jupiter) and
+`planet-2.png` (Mars) are real NASA photographs, public domain via
+Wikimedia Commons:
+[Jupiter (transparent)](https://commons.wikimedia.org/wiki/File:Jupiter_(transparent).png),
+[Mars transparent background](https://commons.wikimedia.org/wiki/File:Mars_transparent_background.png)
+(CC0). `planet-3.png` / `planet-4.png` are simple hand-drawn placeholders.
+Swap any of these for your own art whenever you like — they're just a
+working starting point, not final assets.
