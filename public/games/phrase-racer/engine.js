@@ -503,6 +503,10 @@
     }
 
     var PLANET_IMAGE_CANDIDATE_COUNT = 9;
+    // Populated (and re-filtered) as each image finishes loading, but always
+    // rebuilt from `slots` below so the final order matches the numbered
+    // file names (planet-1.png, planet-2.png, ...) regardless of which
+    // request happens to come back from the network first.
     var readyPlanetImages = [];
     function preloadPlanetImages(categorySlug) {
       var urls = [];
@@ -514,9 +518,13 @@
       for (var j = 1; j <= PLANET_IMAGE_CANDIDATE_COUNT; j++) {
         urls.push(IMAGE_DIR + "planets/planet-" + j + ".png");
       }
-      urls.forEach(function (url) {
+      var slots = new Array(urls.length);
+      urls.forEach(function (url, idx) {
         var img = new Image();
-        img.onload = function () { readyPlanetImages.push(img); };
+        img.onload = function () {
+          slots[idx] = img;
+          readyPlanetImages = slots.filter(function (v) { return !!v; });
+        };
         img.src = url;
       });
     }
@@ -1085,7 +1093,11 @@
       if (readyPlanetImages.length > 0) {
         for (var xi = -farOffset; xi < w + PLANET_SPACING; xi += PLANET_SPACING) {
           var ki = Math.round((xi + farTotal) / PLANET_SPACING);
-          var img = readyPlanetImages[Math.floor(pseudoRandom(ki * 17.3) * readyPlanetImages.length)];
+          // Sequential, not random — cycles 1,2,3,...,N,1,2,... so the same
+          // image can never appear twice in a row (random picks could and
+          // did land on the same index back-to-back).
+          var imgIdx = ((ki % readyPlanetImages.length) + readyPlanetImages.length) % readyPlanetImages.length;
+          var img = readyPlanetImages[imgIdx];
           var yi = h * (0.08 + pseudoRandom(ki * 9.1) * 0.62);
           var size = h * (0.09 + pseudoRandom(ki * 4.4) * 0.22);
           drawImageContain(img, xi - size / 2, yi - size / 2, size, size);
