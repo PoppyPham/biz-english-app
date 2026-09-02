@@ -261,6 +261,16 @@
     } catch (e) { /* ignore */ }
   }
 
+  // Seamless-looping white noise buffer, used as the bed for the
+  // continuous road/wind sound under the engine drone.
+  function createNoiseLoopBuffer(ctx, seconds) {
+    var bufSize = Math.floor(ctx.sampleRate * seconds);
+    var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
   // ── Puzzle data helpers ───────────────────────────────────────────────
   function parseSentence(q) {
     var parts = q.sentence.split(" ");
@@ -337,6 +347,78 @@
     var restartBtn = container.querySelector(".pr-restart-btn");
 
     var cssW = 0, cssH = 0;
+
+    // ── Continuous engine drone + road noise (runs the whole PLAYING
+    // session, not a one-shot effect like the sfx* functions above) ──────
+    var engineLoop = null;
+    function startEngineLoop() {
+      if (engineLoop) return;
+      try {
+        var actx = getCtx();
+        var osc1 = actx.createOscillator();
+        var osc2 = actx.createOscillator();
+        osc1.type = "sawtooth";
+        osc2.type = "sawtooth";
+        osc2.detune.setValueAtTime(13, actx.currentTime);
+        var shaper = actx.createWaveShaper();
+        shaper.curve = getDistortionCurve(18);
+        shaper.oversample = "2x";
+        var engineFilter = actx.createBiquadFilter();
+        engineFilter.type = "lowpass";
+        engineFilter.frequency.value = 500;
+        var engineGain = actx.createGain();
+        engineGain.gain.value = 0;
+        osc1.connect(shaper); osc2.connect(shaper);
+        shaper.connect(engineFilter); engineFilter.connect(engineGain); engineGain.connect(actx.destination);
+        osc1.start(); osc2.start();
+
+        var noiseSrc = actx.createBufferSource();
+        noiseSrc.buffer = createNoiseLoopBuffer(actx, 2);
+        noiseSrc.loop = true;
+        var roadFilter = actx.createBiquadFilter();
+        roadFilter.type = "bandpass";
+        roadFilter.frequency.value = 600;
+        roadFilter.Q.value = 0.6;
+        var roadGain = actx.createGain();
+        roadGain.gain.value = 0;
+        noiseSrc.connect(roadFilter); roadFilter.connect(roadGain); roadGain.connect(actx.destination);
+        noiseSrc.start();
+
+        engineLoop = {
+          osc1: osc1, osc2: osc2, filter: engineFilter, gain: engineGain,
+          roadFilter: roadFilter, roadGain: roadGain, noiseSrc: noiseSrc,
+        };
+      } catch (e) { /* game still playable without sound */ }
+    }
+    function updateEngineLoop(speedKmh, phase) {
+      if (!engineLoop) return;
+      try {
+        var actx = getCtx();
+        var now = actx.currentTime;
+        var revs = Math.max(0, Math.min(1, speedKmh / 150));
+        var baseFreq = 42 + revs * 95;
+        engineLoop.osc1.frequency.setTargetAtTime(baseFreq, now, 0.08);
+        engineLoop.osc2.frequency.setTargetAtTime(baseFreq * 1.004, now, 0.08);
+        engineLoop.filter.frequency.setTargetAtTime(450 + revs * 2000, now, 0.12);
+        var playing = phase === "PLAYING";
+        engineLoop.gain.gain.setTargetAtTime(playing ? 0.07 + revs * 0.08 : 0, now, playing ? 0.2 : 0.08);
+        engineLoop.roadFilter.frequency.setTargetAtTime(400 + revs * 900, now, 0.15);
+        engineLoop.roadGain.gain.setTargetAtTime(playing ? 0.02 + revs * 0.035 : 0, now, playing ? 0.25 : 0.1);
+      } catch (e) { /* ignore */ }
+    }
+    function stopEngineLoop() {
+      if (!engineLoop) return;
+      try {
+        var actx = getCtx();
+        var now = actx.currentTime;
+        engineLoop.gain.gain.setTargetAtTime(0, now, 0.05);
+        engineLoop.roadGain.gain.setTargetAtTime(0, now, 0.05);
+        engineLoop.osc1.stop(now + 0.3);
+        engineLoop.osc2.stop(now + 0.3);
+        engineLoop.noiseSrc.stop(now + 0.3);
+      } catch (e) { /* ignore */ }
+      engineLoop = null;
+    }
 
     function buildDeck() { return shuffle(validQuestions); }
 
@@ -510,6 +592,7 @@
 
     function startGame() {
       unlockAudio();
+      startEngineLoop();
       startScreen.classList.add("pr-hidden");
       gameoverScreen.classList.add("pr-hidden");
       loadQuestion(false);
@@ -572,6 +655,7 @@
     }
 
     function update(dt) {
+      updateEngineLoop(effectiveSpeed(), state.phase);
       if (state.phase === "PLAYING") {
         state.wheelAngle += effectiveSpeed() * 0.0025 * dt;
         advanceScroll(effectiveSpeed(), dt);
@@ -975,6 +1059,7 @@
       unmount: function () {
         if (rafId != null) cancelAnimationFrame(rafId);
         rafId = null;
+        stopEngineLoop();
         window.removeEventListener("resize", resizeCanvas);
         window.removeEventListener("orientationchange", resizeCanvas);
         if (ro) ro.disconnect();
