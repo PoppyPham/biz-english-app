@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { SpeakButton } from "@/components/SpeakButton"
 import { Ipa } from "@/components/Ipa"
+import { checkLevelUp } from "@/lib/levelUp"
+import { playLevelUp } from "@/lib/sounds"
 import type { PhraseWithProgress, UserProgress } from "@/lib/types"
+import type { MasteryLevelDef } from "@/lib/mastery"
 
 type Status = UserProgress["status"]
 
@@ -33,9 +36,10 @@ const STATUS_CONFIG: Record<
 interface PhraseCardProps {
   phrase: PhraseWithProgress
   userId: string | null
+  onLevelUp?: (level: MasteryLevelDef) => void
 }
 
-export function PhraseCard({ phrase, userId }: PhraseCardProps) {
+export function PhraseCard({ phrase, userId, onLevelUp }: PhraseCardProps) {
   const [status, setStatus] = useState<Status>(
     phrase.progress?.status ?? "new"
   )
@@ -53,6 +57,7 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
   async function handleStatus(next: Status) {
     if (!userId || savingStatus || next === status) return
     const prev = status
+    const wasLearned = prev === "learned"
     setStatus(next) // optimistic
     setSavingStatus(true)
 
@@ -68,7 +73,16 @@ export function PhraseCard({ phrase, userId }: PhraseCardProps) {
       { onConflict: "user_id,phrase_id" }
     )
 
-    if (error) setStatus(prev) // rollback
+    if (error) {
+      setStatus(prev) // rollback
+    } else {
+      checkLevelUp(userId, wasLearned, next === "learned").then((level) => {
+        if (level) {
+          playLevelUp()
+          onLevelUp?.(level)
+        }
+      })
+    }
     setSavingStatus(false)
   }
 

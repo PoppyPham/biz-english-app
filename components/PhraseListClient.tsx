@@ -3,7 +3,9 @@
 import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PhraseCard } from "@/components/PhraseCard"
+import { LevelUpPopup } from "@/components/LevelUpPopup"
 import type { PhraseWithProgress } from "@/lib/types"
+import type { MasteryLevelDef } from "@/lib/mastery"
 
 type Filter = "all" | "new" | "learning" | "learned" | "favorites"
 
@@ -26,6 +28,7 @@ export function PhraseListClient({
   userId,
 }: PhraseListClientProps) {
   const [filter, setFilter] = useState<Filter>("all")
+  const [levelUpInfo, setLevelUpInfo] = useState<MasteryLevelDef | null>(null)
 
   const filtered = phrases.filter((p) => {
     if (filter === "all") return true
@@ -43,6 +46,7 @@ export function PhraseListClient({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-8">
+      <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
       {/* Filter tabs */}
       {userId && (
         <div className="mb-6 overflow-x-auto no-scrollbar">
@@ -90,7 +94,12 @@ export function PhraseListClient({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {filtered.map((phrase) => (
-            <PhraseCard key={phrase.id} phrase={phrase} userId={userId} />
+            <PhraseCard
+              key={phrase.id}
+              phrase={phrase}
+              userId={userId}
+              onLevelUp={setLevelUpInfo}
+            />
           ))}
         </div>
       )}

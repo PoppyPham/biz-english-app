@@ -22,6 +22,7 @@ the built-in synthesized sound automatically.
 | `game-over.mp3`               | Quiz lives run out                                |
 | `celebrate.mp3`                  | Flashcard "memorized" reward                   |
 | `high-score.mp3`                   | Beating a saved high score                   |
+| `level-up.mp3`                       | Reaching a new Word Mastery level        |
 
 ## Format
 
@@ -49,4 +50,5 @@ Jingles" pack (CC0 / public domain — https://kenney.nl/assets/music-jingles).
 crowd-applause clip (CC0, recorded by Joseph SARDIN —
 https://bigsoundbank.com/applause-1-s1765.html) for a bigger reward
 moment. Swap any of these for your own audio whenever you like — they're
-a working starting point, not final sound design.
+a working starting point, not final sound design. `level-up.mp3` isn't
+provided, so reaching a new level still uses the built-in synthesis.

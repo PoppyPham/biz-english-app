@@ -26,10 +26,14 @@ import {
   playExtraLife,
   playGameOver,
   playHighScore,
+  playLevelUp,
 } from "@/lib/sounds"
 import { speakText } from "@/lib/speak"
 import { ExampleQuote } from "@/components/ExampleQuote"
+import { checkLevelUp } from "@/lib/levelUp"
+import { LevelUpPopup } from "@/components/LevelUpPopup"
 import type { Phrase } from "@/lib/types"
+import type { MasteryLevelDef } from "@/lib/mastery"
 
 const TIMER_SECONDS = 20
 const STARTING_LIVES = 3
@@ -108,6 +112,11 @@ export function QuizGame({
   const [lostLifeFlash, setLostLifeFlash] = useState(false)
   const [popup, setPopup] = useState<{ key: number; delta: number } | null>(null)
   const popupKey = useRef(0)
+  const [levelUpInfo, setLevelUpInfo] = useState<MasteryLevelDef | null>(null)
+  // Which of these phrases were already "learned" before this session, so
+  // a correct answer only counts as a NEW learn (for level-up purposes)
+  // the first time — Quiz doesn't otherwise track per-phrase progress.
+  const [learnedIds, setLearnedIds] = useState<Set<string>>(new Set())
 
   // High score
   const [highScore, setHighScore] = useState<number | null>(null)
@@ -150,6 +159,28 @@ export function QuizGame({
       cancelled = true
     }
   }, [userId, scope])
+
+  // Which of these phrases are already marked "learned" for this user —
+  // needed so answering one correctly a second time doesn't get double
+  // counted as a new level-up-eligible learn.
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    const supabase = createClient()
+    supabase
+      .from("user_progress")
+      .select("phrase_id")
+      .eq("user_id", userId)
+      .eq("status", "learned")
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setLearnedIds(new Set(data.map((row) => row.phrase_id as string)))
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   const current = questions[index]
 
@@ -197,6 +228,8 @@ export function QuizGame({
       setSelected(optionIdx)
       const correct =
         optionIdx !== null && current.options[optionIdx]?.correct === true
+      const phraseId = current.phrase.id
+      const wasLearned = learnedIds.has(phraseId)
 
       setAnsweredCount((c) => c + 1)
 
@@ -205,6 +238,9 @@ export function QuizGame({
         setScore((s) => s + POINTS_CORRECT)
         triggerPopup(POINTS_CORRECT)
         setStreak((s) => s + 1)
+        if (!wasLearned) {
+          setLearnedIds((s) => new Set(s).add(phraseId))
+        }
       } else {
         setScore((s) => Math.max(0, s - POINTS_WRONG))
         triggerPopup(-POINTS_WRONG)
@@ -213,11 +249,26 @@ export function QuizGame({
         setLostLifeFlash(true)
         setTimeout(() => setLostLifeFlash(false), 500)
         playLifeLost()
+        if (wasLearned) {
+          setLearnedIds((s) => {
+            const next = new Set(s)
+            next.delete(phraseId)
+            return next
+          })
+        }
       }
-      void saveResult(current.phrase.id, correct)
+      void saveResult(phraseId, correct)
+      if (userId) {
+        checkLevelUp(userId, wasLearned, correct).then((level) => {
+          if (level) {
+            playLevelUp()
+            setLevelUpInfo(level)
+          }
+        })
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, done]
+    [current, done, learnedIds, userId]
   )
 
   // Game-over side effects: high score save/fanfare, or a game-over tone.
@@ -368,6 +419,7 @@ export function QuizGame({
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
+        <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
         {isNewHighScore ? (
           <div className="flex flex-col items-center gap-2 animate-in zoom-in-50 fade-in duration-500">
             <Trophy className="size-12 text-amber-400" />
@@ -451,6 +503,7 @@ export function QuizGame({
   // ── Active question ──
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
       {/* Bonus-life celebration banner */}
       {lifeBonusFlash && (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">

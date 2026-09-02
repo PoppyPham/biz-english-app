@@ -101,6 +101,7 @@ const SOUND_FILES: Record<string, string> = {
   gameOver: "game-over.mp3",
   celebrate: "celebrate.mp3",
   highScore: "high-score.mp3",
+  levelUp: "level-up.mp3",
 }
 const soundArrayBufferCache: Record<string, Promise<ArrayBuffer | null>> = {}
 const soundDecodedCache: Record<string, AudioBuffer | null> = {}
@@ -443,4 +444,31 @@ export function playHighScore() {
     tone(freq, t + i * 0.08, 0.3, { gain: 0.18 })
   })
   tone(1567.98, t + 0.4, 0.35, { gain: 0.16, glideTo: 2093 })
+}
+
+/**
+ * The biggest celebration in the app — reaching a new Word Mastery level.
+ * Same launch-whistle/BANG/sparkles/crowd-cheer build as playCelebrate(),
+ * but landing on a longer, higher fanfare than playHighScore() so it reads
+ * as the bigger achievement.
+ */
+export function playLevelUp() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("levelUp")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.9)
+  const audio = getCtx()
+  if (!audio) return
+  const t = audio.currentTime
+
+  whistleUp(t, 0.3) // launch
+  boom(t + 0.3) // BANG!
+
+  const fanfare = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98]
+  fanfare.forEach((freq, i) => {
+    tone(freq, t + 0.34 + i * 0.09, 0.32, { gain: 0.19 })
+  })
+  tone(2093, t + 0.34 + fanfare.length * 0.09, 0.6, { gain: 0.18, glideTo: 2637.02 })
+
+  sparkleShower(t + 0.5, 28, 1.2) // sparks raining down
+  crowdCheer(t + 0.55, 1.8) // the crowd goes wild
 }

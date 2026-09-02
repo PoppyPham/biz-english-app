@@ -19,10 +19,13 @@ import {
 import { Ipa } from "@/components/Ipa"
 import { SpeakButton } from "@/components/SpeakButton"
 import { SoundToggle } from "@/components/SoundToggle"
-import { playCelebrate, playNeutral, playComplete } from "@/lib/sounds"
+import { playCelebrate, playNeutral, playComplete, playLevelUp } from "@/lib/sounds"
 import { speakText } from "@/lib/speak"
 import { ExampleQuote } from "@/components/ExampleQuote"
+import { checkLevelUp } from "@/lib/levelUp"
+import { LevelUpPopup } from "@/components/LevelUpPopup"
 import type { Phrase, UserProgress } from "@/lib/types"
+import type { MasteryLevelDef } from "@/lib/mastery"
 
 type Result = "learned" | "learning"
 type Status = "new" | "learning" | "learned"
@@ -83,6 +86,7 @@ export function FlashcardGame({
   )
   const [memorizedPopup, setMemorizedPopup] = useState<number | null>(null)
   const [showBurst, setShowBurst] = useState(false) // big "reward" celebration
+  const [levelUpInfo, setLevelUpInfo] = useState<MasteryLevelDef | null>(null)
   const popupKey = useRef(0)
 
   const burstTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -159,11 +163,20 @@ export function FlashcardGame({
 
   const handleGotIt = useCallback(() => {
     if (!current || decided || done) return
+    const wasLearned = progressMap[current.id] === "learned"
     setDecided(true)
     setJustGotIt(true)
     setResults((r) => ({ ...r, [current.id]: "learned" }))
     setProgressMap((m) => ({ ...m, [current.id]: "learned" }))
     void saveResult(current.id, "learned")
+    if (userId && !wasLearned) {
+      checkLevelUp(userId, wasLearned, true).then((level) => {
+        if (level) {
+          playLevelUp()
+          setLevelUpInfo(level)
+        }
+      })
+    }
 
     // Say the word first, then celebrate, then reveal the definition/example
     // so there's something to read while the auto-advance timer runs (the
@@ -187,11 +200,13 @@ export function FlashcardGame({
 
   const handleStillLearning = useCallback(() => {
     if (!current || decided || done) return
+    const wasLearned = progressMap[current.id] === "learned"
     setDecided(true)
     setResults((r) => ({ ...r, [current.id]: "learning" }))
     setProgressMap((m) => ({ ...m, [current.id]: "learning" }))
     playNeutral()
     void saveResult(current.id, "learning")
+    if (userId && wasLearned) void checkLevelUp(userId, wasLearned, false)
     setFlipped(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, decided, done])
@@ -264,6 +279,7 @@ export function FlashcardGame({
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
+        <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
         <div className="flex flex-col items-center gap-3">
           <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="size-8 text-primary" />
@@ -378,6 +394,7 @@ export function FlashcardGame({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
       {/* Top bar + progress */}
       <div className="border-b border-border px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-2xl items-center gap-3">

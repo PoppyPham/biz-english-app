@@ -4,7 +4,11 @@ import { useState } from "react"
 import { Heart } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { checkLevelUp } from "@/lib/levelUp"
+import { playLevelUp } from "@/lib/sounds"
+import { LevelUpPopup } from "@/components/LevelUpPopup"
 import type { UserProgress } from "@/lib/types"
+import type { MasteryLevelDef } from "@/lib/mastery"
 
 type Status = UserProgress["status"]
 
@@ -40,6 +44,7 @@ export function PhraseDetailControls({
   const [isFavorite, setIsFavorite] = useState(initialFavorite)
   const [savingStatus, setSavingStatus] = useState(false)
   const [savingFav, setSavingFav] = useState(false)
+  const [levelUpInfo, setLevelUpInfo] = useState<MasteryLevelDef | null>(null)
 
   async function upsert(patch: Partial<{ status: Status; is_favorite: boolean }>) {
     const supabase = createClient()
@@ -59,6 +64,7 @@ export function PhraseDetailControls({
   async function handleStatus(next: Status) {
     if (savingStatus || next === status) return
     const prev = status
+    const wasLearned = prev === "learned"
     setStatus(next)
     setSavingStatus(true)
     const { error } = await (async () => {
@@ -68,7 +74,16 @@ export function PhraseDetailControls({
         { onConflict: "user_id,phrase_id" }
       )
     })()
-    if (error) setStatus(prev)
+    if (error) {
+      setStatus(prev)
+    } else {
+      checkLevelUp(userId, wasLearned, next === "learned").then((level) => {
+        if (level) {
+          playLevelUp()
+          setLevelUpInfo(level)
+        }
+      })
+    }
     setSavingStatus(false)
   }
 
@@ -88,6 +103,7 @@ export function PhraseDetailControls({
 
   return (
     <div className="flex items-center gap-3">
+      <LevelUpPopup level={levelUpInfo} onClose={() => setLevelUpInfo(null)} />
       {/* Status buttons */}
       <div className="flex gap-2">
         {(["new", "learning", "learned"] as Status[]).map((s) => (
