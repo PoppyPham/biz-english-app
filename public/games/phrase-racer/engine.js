@@ -31,27 +31,49 @@
   };
 
   var COLORS = {
-    skyTop: "#0f1512",
-    skyBottom: "#0c100e",
-    treeFar: "#1c2420",
-    treeNear: "#233028",
-    road: "#1b201d",
-    roadLine: "#3a4a3f",
+    spaceTop: "#05070a",
+    spaceBottom: "#0c100e",
+    starDim: "#48534d",
+    starBright: "#eef1ee",
     primary: "#22c55e",
     amber: "#f59e0b",
     destructive: "#ef4444",
+    hull: "#22c55e",
+    hullDark: "#15803d",
+    cockpit: "#0a1a22",
     chrome: "#c7cdd1",
-    glass: "#0a1a22",
-    stripe: "#e8e6df",
-    tire: "#111315",
-    rim: "#8b9096",
-    headlight: "#fff4c9",
-    taillight: "#e0362e",
+    engineCore: "#e8f7ff",
+    engineGlow: "#38bdf8",
+    rockLight: "#8a7660",
+    rockDark: "#2e251c",
   };
 
+  // Wrap periods for the three scroll offsets advanceScroll() maintains —
+  // unchanged from before (still just "how many px before this parallax
+  // layer's offset resets to 0"); every drawing spacing below is chosen to
+  // evenly divide its layer's wrap period so recycling stays seamless.
   var TREE_FAR_SPACING = 140;
   var TREE_NEAR_SPACING = 90;
   var ROAD_DASH = 40;
+
+  var STAR_FAR_SPACING = TREE_FAR_SPACING / 4; // 35
+  var STAR_NEAR_SPACING = TREE_NEAR_SPACING / 3; // 30
+  var DUST_SPACING = ROAD_DASH / 2; // 20
+  var PLANET_SPACING = TREE_FAR_SPACING * 3; // 420
+  var NEBULA_SPACING = TREE_FAR_SPACING * 6; // 840
+
+  var PLANET_PALETTES = [
+    { body: "#c2694a", shade: "#7a3f2a", ring: false },
+    { body: "#3b82c4", shade: "#1f4e78", ring: false },
+    { body: "#caa15a", shade: "#7d6236", ring: true },
+    { body: "#7c6a9e", shade: "#453a5c", ring: false },
+  ];
+  var NEBULA_COLORS = ["rgba(34,197,94,0.10)", "rgba(14,165,233,0.10)", "rgba(124,58,237,0.09)"];
+
+  function pseudoRandom(seed) {
+    var x = Math.sin(seed * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  }
   var FALLBACK_WORDS = ["quickly", "meeting", "project", "budget", "deadline", "client", "carefully", "tomorrow"];
 
   function normalizeWord(w) { return w.toLowerCase().replace(/[^a-z]/g, ""); }
@@ -438,6 +460,7 @@
         crashImpactPlayed: false,
         crashApproachSpeed: 0,
         crashPhraseText: "",
+        crashAsteroidShape: null,
         hopMs: null,
         wheelAngle: 0,
         run: null,
@@ -574,6 +597,7 @@
       state.crashImpactPlayed = false;
       state.crashPhraseText = state.run.q.answer.join(" ");
       state.crashApproachSpeed = effectiveSpeed();
+      state.crashAsteroidShape = makeAsteroidShape();
       sfxTireScreech();
     }
 
@@ -633,25 +657,43 @@
       var amp = 8 * (1 - t);
       return { x: (Math.random() * 2 - 1) * amp, y: (Math.random() * 2 - 1) * amp };
     }
-    function carFlashOn(crashMs) {
+    function shipFlashOn(crashMs) {
       var c = CONFIG.CRASH;
       if (crashMs < c.APPROACH || crashMs > c.APPROACH + c.SHAKE) return false;
       var t = crashMs - c.APPROACH;
       return Math.floor(t / 90) % 2 === 0;
     }
-    function barricadeAlpha(crashMs) {
+    function asteroidAlpha(crashMs) {
       var c = CONFIG.CRASH;
       if (crashMs < c.HOLD) return 1;
       var t = (crashMs - c.HOLD) / c.FADE;
       return Math.max(0, 1 - t);
     }
-    function barricadeX(carX, crashMs) {
+    function asteroidX(shipX, crashMs) {
       var c = CONFIG.CRASH;
-      var startX = carX + 260;
-      var endX = carX + 90;
+      var startX = shipX + 260;
+      var endX = shipX + 90;
       if (crashMs >= c.APPROACH) return endX;
       var t = crashMs / c.APPROACH;
       return startX + (endX - startX) * t;
+    }
+    // Jagged rock silhouette + crater layout, generated ONCE per crash
+    // (in resolveWrong) and stored on state — render() must stay pure, so
+    // the random shape can't be regenerated every frame or it would jitter.
+    function makeAsteroidShape() {
+      var n = 9 + Math.floor(Math.random() * 3);
+      var radii = [];
+      for (var i = 0; i < n; i++) radii.push(0.72 + Math.random() * 0.38);
+      var craters = [];
+      var craterCount = 3 + Math.floor(Math.random() * 3);
+      for (var j = 0; j < craterCount; j++) {
+        craters.push({
+          angle: Math.random() * Math.PI * 2,
+          dist: 0.15 + Math.random() * 0.5,
+          r: 0.08 + Math.random() * 0.1,
+        });
+      }
+      return { radii: radii, craters: craters };
     }
 
     function update(dt) {
@@ -684,7 +726,7 @@
       }
     }
 
-    // ── Canvas drawing: classic muscle-car silhouette ──────────────────
+    // ── Canvas drawing: deep-space flight ───────────────────────────────
     function roundRect(x, y, w, h, r) {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -695,180 +737,289 @@
       ctx.closePath();
     }
 
-    function drawTreeShape(x, baseY, r, height) {
-      ctx.beginPath();
-      ctx.moveTo(x, baseY);
-      ctx.lineTo(x - r, baseY);
-      ctx.lineTo(x, baseY - height);
-      ctx.lineTo(x + r, baseY);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function drawSky(w, roadTop) {
-      var g = ctx.createLinearGradient(0, 0, 0, roadTop);
-      g.addColorStop(0, COLORS.skyTop);
-      g.addColorStop(1, COLORS.skyBottom);
+    function drawSpace(w, h) {
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, COLORS.spaceTop);
+      g.addColorStop(1, COLORS.spaceBottom);
       ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, roadTop);
+      ctx.fillRect(0, 0, w, h);
     }
 
-    function drawTrees(w, roadTop) {
-      ctx.fillStyle = COLORS.treeFar;
-      var farY = roadTop - 6;
-      for (var x = -state.scroll.far; x < w + TREE_FAR_SPACING; x += TREE_FAR_SPACING) drawTreeShape(x, farY, 24, 42);
-      ctx.fillStyle = COLORS.treeNear;
-      var nearY = roadTop + 6;
-      for (var x2 = -state.scroll.near; x2 < w + TREE_NEAR_SPACING; x2 += TREE_NEAR_SPACING) drawTreeShape(x2, nearY, 17, 32);
-    }
-
-    function drawRoad(w, roadTop, roadHeight) {
-      ctx.fillStyle = COLORS.road;
-      ctx.fillRect(0, roadTop, w, roadHeight);
-      ctx.strokeStyle = COLORS.roadLine;
-      ctx.lineWidth = 4;
-      ctx.setLineDash([ROAD_DASH * 0.5, ROAD_DASH * 0.5]);
-      ctx.lineDashOffset = -state.scroll.road;
-      var laneY = roadTop + roadHeight * 0.5;
-      ctx.beginPath();
-      ctx.moveTo(0, laneY);
-      ctx.lineTo(w, laneY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    function carHeightFor(h) { return h * 0.17; }
-
-    function drawWheel(cx, cy, r, angle) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.tire;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.rim;
-      ctx.fill();
-      ctx.strokeStyle = "#3a3d40";
-      ctx.lineWidth = 2;
-      for (var s = 0; s < 5; s++) {
-        var a = angle + (s * Math.PI * 2) / 5;
+    // Soft, sparse, very-slow-moving color washes for depth. Spacing is a
+    // clean multiple of TREE_FAR_SPACING so it recycles in step with
+    // advanceScroll()'s wrap of scroll.far, with no visible seam.
+    function drawNebulae(w, h) {
+      for (var x = -state.scroll.far; x < w + NEBULA_SPACING; x += NEBULA_SPACING) {
+        var k = Math.round((x + state.scroll.far) / NEBULA_SPACING);
+        var color = NEBULA_COLORS[Math.abs(k) % NEBULA_COLORS.length];
+        var y = h * (0.1 + pseudoRandom(k * 2.7) * 0.5);
+        var r = h * (0.35 + pseudoRandom(k * 8.8) * 0.25);
+        var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, color);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawOnePlanet(x, y, r, pal) {
+      ctx.save();
+      ctx.translate(x, y);
+      if (pal.ring) {
+        ctx.save();
+        ctx.rotate(-0.35);
+        ctx.strokeStyle = pal.shade;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = Math.max(1.5, r * 0.12);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 1.7, r * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      var g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+      g.addColorStop(0, pal.body);
+      g.addColorStop(1, pal.shade);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPlanets(w, h) {
+      for (var x = -state.scroll.far; x < w + PLANET_SPACING; x += PLANET_SPACING) {
+        var k = Math.round((x + state.scroll.far) / PLANET_SPACING);
+        var pal = PLANET_PALETTES[Math.abs(k) % PLANET_PALETTES.length];
+        var y = h * (0.12 + pseudoRandom(k * 9.1) * 0.55);
+        var r = h * (0.05 + pseudoRandom(k * 4.4) * 0.05);
+        drawOnePlanet(x, y, r, pal);
+      }
+    }
+
+    function drawStars(w, h) {
+      ctx.fillStyle = COLORS.starDim;
+      for (var x = -state.scroll.far; x < w + STAR_FAR_SPACING; x += STAR_FAR_SPACING) {
+        var k = Math.round((x + state.scroll.far) / STAR_FAR_SPACING);
+        var y = pseudoRandom(k * 3.1) * h;
+        var r = 1 + pseudoRandom(k * 7.7) * 1.1;
+        ctx.globalAlpha = 0.3 + pseudoRandom(k * 5.3) * 0.35;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = COLORS.starBright;
+      for (var x2 = -state.scroll.near; x2 < w + STAR_NEAR_SPACING; x2 += STAR_NEAR_SPACING) {
+        var k2 = Math.round((x2 + state.scroll.near) / STAR_NEAR_SPACING);
+        var y2 = pseudoRandom(k2 * 2.3 + 99) * h;
+        var r2 = 1.3 + pseudoRandom(k2 * 4.1) * 1.5;
+        ctx.globalAlpha = 0.55 + pseudoRandom(k2 * 6.6) * 0.45;
+        ctx.beginPath();
+        ctx.arc(x2, y2, r2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Fastest, foreground parallax layer — small streaking dust flecks.
+    function drawForegroundDust(w, h) {
+      ctx.strokeStyle = "rgba(255,255,255,0.4)";
+      ctx.lineWidth = 1;
+      for (var x = -state.scroll.road; x < w + DUST_SPACING; x += DUST_SPACING) {
+        var k = Math.round((x + state.scroll.road) / DUST_SPACING);
+        var y = h * (0.08 + pseudoRandom(k * 13.3) * 0.84);
+        var len = 4 + pseudoRandom(k * 17.1) * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - len, y);
         ctx.stroke();
       }
     }
 
-    // Long-hood fastback muscle-car silhouette, drawn in a local (0..W, 0..H)
-    // box then translated into place.
-    function drawCarBody(W, H, flashOn) {
-      var bodyColor = flashOn ? COLORS.destructive : COLORS.primary;
-      var glassColor = flashOn ? "#4a0f0f" : COLORS.glass;
+    function shipHeightFor(h) { return h * 0.22; }
 
+    // Bulkier cruiser-style hull (not a thin missile) — nose pointing right
+    // (toward oncoming asteroids), twin engine nozzles at the tail (left).
+    // Drawn in a local (0..W, 0..H) box then translated into place.
+    function drawShipBody(W, H, flashOn) {
+      var hullColor = flashOn ? COLORS.destructive : COLORS.hull;
+      var hullDark = flashOn ? "#7f1d1d" : COLORS.hullDark;
+      var hullDarker = flashOn ? "#4a0d0d" : "#0d3820";
+      var cockpitColor = flashOn ? "#4a0f0f" : COLORS.cockpit;
+
+      // main hull — nose is two smooth curves converging to a point, not a
+      // hard-angled wedge, for an aerodynamic cone rather than an arrow tip
       ctx.beginPath();
-      ctx.moveTo(0, H * 0.5);
-      ctx.lineTo(0, H * 0.38);
-      ctx.quadraticCurveTo(W * 0.02, H * 0.30, W * 0.05, H * 0.30);
-      ctx.lineTo(W * 0.16, H * 0.28);
-      ctx.lineTo(W * 0.38, H * 0.28);
-      ctx.quadraticCurveTo(W * 0.42, H * 0.24, W * 0.45, H * 0.10);
-      ctx.lineTo(W * 0.65, H * 0.07);
-      ctx.quadraticCurveTo(W * 0.71, H * 0.08, W * 0.73, H * 0.24);
-      ctx.lineTo(W * 0.90, H * 0.27);
-      ctx.quadraticCurveTo(W * 0.97, H * 0.30, W * 1.00, H * 0.40);
-      ctx.lineTo(W * 1.00, H * 0.50);
-      ctx.lineTo(W * 1.00, H * 0.58);
-      ctx.lineTo(0, H * 0.58);
+      ctx.moveTo(0, H * 0.34);
+      ctx.lineTo(0, H * 0.66);
+      ctx.quadraticCurveTo(W * 0.06, H * 0.75, W * 0.20, H * 0.76);
+      ctx.quadraticCurveTo(W * 0.42, H * 0.72, W * 0.58, H * 0.62);
+      ctx.quadraticCurveTo(W * 0.82, H * 0.545, W * 1.00, H * 0.50);
+      ctx.quadraticCurveTo(W * 0.82, H * 0.455, W * 0.58, H * 0.38);
+      ctx.quadraticCurveTo(W * 0.42, H * 0.28, W * 0.20, H * 0.24);
+      ctx.quadraticCurveTo(W * 0.06, H * 0.25, 0, H * 0.34);
       ctx.closePath();
-      ctx.fillStyle = bodyColor;
+      var hullGrad = ctx.createLinearGradient(0, H * 0.24, 0, H * 0.76);
+      hullGrad.addColorStop(0, flashOn ? "#f87171" : "#4ade80");
+      hullGrad.addColorStop(0.55, hullColor);
+      hullGrad.addColorStop(1, hullDark);
+      ctx.fillStyle = hullGrad;
       ctx.fill();
 
-      // side accent stripe along hood + roof
-      ctx.fillStyle = COLORS.stripe;
-      ctx.globalAlpha = 0.85;
-      ctx.fillRect(W * 0.14, H * 0.185, W * 0.58, H * 0.045);
+      // lower-hull shade for a rounded, more three-dimensional feel
+      ctx.fillStyle = hullDark;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.02, H * 0.50);
+      ctx.quadraticCurveTo(W * 0.08, H * 0.70, W * 0.22, H * 0.75);
+      ctx.quadraticCurveTo(W * 0.42, H * 0.70, W * 0.58, H * 0.60);
+      ctx.lineTo(W * 0.58, H * 0.50);
+      ctx.quadraticCurveTo(W * 0.40, H * 0.58, W * 0.20, H * 0.60);
+      ctx.quadraticCurveTo(W * 0.08, H * 0.58, W * 0.02, H * 0.50);
+      ctx.closePath();
+      ctx.fill();
+
+      // delta wings — sized to actually read as wings against the now-bulkier hull
+      ctx.fillStyle = hullDark;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.15, H * 0.30);
+      ctx.lineTo(W * 0.23, H * 0.08);
+      ctx.lineTo(W * 0.40, H * 0.13);
+      ctx.lineTo(W * 0.36, H * 0.32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(W * 0.15, H * 0.70);
+      ctx.lineTo(W * 0.23, H * 0.92);
+      ctx.lineTo(W * 0.40, H * 0.87);
+      ctx.lineTo(W * 0.36, H * 0.68);
+      ctx.closePath();
+      ctx.fill();
+
+      // panel-line greebles for detail
+      ctx.strokeStyle = hullDarker;
+      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = Math.max(1, H * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(W * 0.30, H * 0.32); ctx.lineTo(W * 0.56, H * 0.36);
+      ctx.moveTo(W * 0.30, H * 0.68); ctx.lineTo(W * 0.56, H * 0.64);
+      ctx.moveTo(W * 0.46, H * 0.40); ctx.lineTo(W * 0.46, H * 0.60);
+      ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // cabin glass (windshield + rear window)
-      ctx.beginPath();
-      ctx.moveTo(W * 0.40, H * 0.27);
-      ctx.quadraticCurveTo(W * 0.44, H * 0.14, W * 0.47, H * 0.13);
-      ctx.lineTo(W * 0.64, H * 0.10);
-      ctx.quadraticCurveTo(W * 0.69, H * 0.11, W * 0.70, H * 0.22);
-      ctx.lineTo(W * 0.71, H * 0.26);
-      ctx.closePath();
-      ctx.fillStyle = glassColor;
-      ctx.fill();
-
-      // hood scoop
-      ctx.fillStyle = flashOn ? "#7f1d1d" : "#116b34";
-      roundRect(W * 0.21, H * 0.22, W * 0.10, H * 0.05, 3);
-      ctx.fill();
-
-      // chrome bumpers
+      // accent stripe
       ctx.fillStyle = COLORS.chrome;
-      roundRect(0, H * 0.42, W * 0.05, H * 0.08, 3); ctx.fill();
-      roundRect(W * 0.95, H * 0.40, W * 0.05, H * 0.08, 3); ctx.fill();
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(W * 0.10, H * 0.475, W * 0.62, H * 0.05);
+      ctx.globalAlpha = 1;
 
-      // headlight + taillight
+      // cockpit canopy — glassy vertical gradient instead of a flat fill
       ctx.beginPath();
-      ctx.arc(W * 0.015, H * 0.40, H * 0.05, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.headlight;
+      ctx.ellipse(W * 0.63, H * 0.43, W * 0.12, H * 0.13, 0, 0, Math.PI * 2);
+      var cockpitGrad = ctx.createLinearGradient(0, H * 0.30, 0, H * 0.56);
+      cockpitGrad.addColorStop(0, flashOn ? "#7a2020" : "#1c4a5c");
+      cockpitGrad.addColorStop(1, cockpitColor);
+      ctx.fillStyle = cockpitGrad;
       ctx.fill();
-      ctx.fillStyle = COLORS.taillight;
-      roundRect(W * 0.965, H * 0.36, W * 0.03, H * 0.08, 2);
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
+      ctx.lineWidth = Math.max(1, H * 0.012);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(W * 0.67, H * 0.39, W * 0.035, H * 0.03, -0.4, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fill();
+
+      // nose — a soft highlight streak along the top edge (catches the
+      // "light") plus a small beacon at the very tip, instead of a flat
+      // triangle stuck onto the point.
+      ctx.strokeStyle = "rgba(255,255,255,0.45)";
+      ctx.lineWidth = Math.max(1, H * 0.018);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(W * 0.56, H * 0.41);
+      ctx.quadraticCurveTo(W * 0.80, H * 0.465, W * 0.965, H * 0.495);
+      ctx.stroke();
+      ctx.lineCap = "butt";
+
+      var beaconGlow = ctx.createRadialGradient(W, H * 0.5, 0, W, H * 0.5, W * 0.05);
+      beaconGlow.addColorStop(0, flashOn ? "rgba(255,180,180,0.9)" : "rgba(191,255,224,0.9)");
+      beaconGlow.addColorStop(1, "rgba(191,255,224,0)");
+      ctx.fillStyle = beaconGlow;
+      ctx.beginPath();
+      ctx.arc(W, H * 0.5, W * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(W * 0.995, H * 0.5, Math.max(1.2, H * 0.015), 0, Math.PI * 2);
+      ctx.fill();
+
+      // twin engine nozzles at the tail
+      ctx.fillStyle = "#111315";
+      roundRect(-W * 0.03, H * 0.32, W * 0.08, H * 0.15, 3);
+      ctx.fill();
+      roundRect(-W * 0.03, H * 0.53, W * 0.08, H * 0.15, 3);
       ctx.fill();
     }
 
-    function drawCar(x, y, h, flashOn) {
-      var carH = carHeightFor(h);
-      var carW = carH * 2.7;
-      var wheelR = carH * 0.26;
-      var bounce = Math.sin(performance.now() / 120) * carH * (state.phase === "PLAYING" ? 0.025 : 0.008);
+    function drawShip(x, y, h, flashOn) {
+      var shipH = shipHeightFor(h);
+      var shipW = shipH * 2.0;
+      var bob = Math.sin(performance.now() / 500) * shipH * (state.phase === "PLAYING" ? 0.05 : 0.015);
       var hop = state.hopMs != null
-        ? -Math.sin(Math.min(1, state.hopMs / CONFIG.HOP) * Math.PI) * carH * 0.18
+        ? -Math.sin(Math.min(1, state.hopMs / CONFIG.HOP) * Math.PI) * shipH * 0.18
         : 0;
 
       ctx.save();
-      ctx.translate(x, y + bounce + hop);
-
-      var wheelY = carH * 0.80;
-      drawWheel(carW * 0.19, wheelY, wheelR, state.wheelAngle);
-      drawWheel(carW * 0.83, wheelY, wheelR, state.wheelAngle);
-      drawCarBody(carW, carH, flashOn);
-
+      ctx.translate(x, y + bob + hop);
+      drawShipBody(shipW, shipH, flashOn);
       ctx.restore();
     }
 
-    function drawNitroFlame(x, y, h) {
-      var carH = carHeightFor(h);
-      var flicker = 0.7 + Math.random() * 0.3;
+    function drawOneThruster(x, cy, shipH, intense) {
+      var flicker = 0.75 + Math.random() * 0.25;
+      var scale = (intense ? 1.9 : 1) * flicker;
+      var baseAlpha = intense ? 0.95 : 0.6;
+
       ctx.save();
-      ctx.translate(x - carH * 0.05, y + carH * 0.5);
-      ctx.fillStyle = "rgba(56,189,248,0.85)";
+      ctx.translate(x, cy);
+
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, shipH * 0.34 * scale);
+      g.addColorStop(0, "rgba(232,247,255," + baseAlpha + ")");
+      g.addColorStop(0.4, "rgba(56,189,248,0.55)");
+      g.addColorStop(1, "rgba(56,189,248,0)");
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(0, -carH * 0.12);
-      ctx.lineTo(-carH * 0.95 * flicker, 0);
-      ctx.lineTo(0, carH * 0.12);
+      ctx.arc(0, 0, shipH * 0.34 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = intense ? "rgba(232,247,255,0.92)" : "rgba(232,247,255,0.7)";
+      ctx.beginPath();
+      ctx.moveTo(0, -shipH * 0.06 * (intense ? 1.3 : 1));
+      ctx.lineTo(-shipH * (intense ? 1.15 : 0.5) * flicker, 0);
+      ctx.lineTo(0, shipH * 0.06 * (intense ? 1.3 : 1));
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = "rgba(191,219,254,0.9)";
-      ctx.beginPath();
-      ctx.moveTo(0, -carH * 0.06);
-      ctx.lineTo(-carH * 0.55 * flicker, 0);
-      ctx.lineTo(0, carH * 0.06);
-      ctx.closePath();
-      ctx.fill();
+
       ctx.restore();
     }
 
-    function drawSpeedLines(w, h) {
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
-      ctx.lineWidth = 2;
-      for (var i = 0; i < 10; i++) {
-        var y = (i / 10) * h * 0.6 + h * 0.08 + Math.sin(performance.now() / 300 + i) * 4;
-        var len = 40 + Math.random() * 60;
-        var xEnd = w * 0.15 + Math.random() * w * 0.7;
+    // Twin thruster glow at the tail — always on while flying, flared up
+    // during NITRO (bigger, brighter).
+    function drawEngineGlow(x, y, h, intense) {
+      var shipH = shipHeightFor(h);
+      var nozzleX = x - shipH * 0.02;
+      drawOneThruster(nozzleX, y + shipH * 0.395, shipH, intense);
+      drawOneThruster(nozzleX, y + shipH * 0.605, shipH, intense);
+    }
+
+    // Warp-speed star streaks during NITRO — the stars "moving faster".
+    function drawStarStreaks(w, h) {
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 1.5;
+      for (var i = 0; i < 14; i++) {
+        var y = Math.random() * h;
+        var len = 60 + Math.random() * 100;
+        var xEnd = Math.random() * w;
         ctx.beginPath();
         ctx.moveTo(xEnd + len, y);
         ctx.lineTo(xEnd, y);
@@ -898,45 +1049,59 @@
       }
     }
 
-    function drawBarricade(w, h, carX, roadTop, crashMs) {
-      var alpha = barricadeAlpha(crashMs);
+    // Tumbling asteroid carrying the correct phrase — spawns ahead of the
+    // ship, gets hit, then drifts/falls away as it fades out.
+    function drawAsteroid(w, h, shipX, shipCenterY, crashMs) {
+      var alpha = asteroidAlpha(crashMs);
       if (alpha <= 0) return;
-      var bx = barricadeX(carX, crashMs);
-      var bw = Math.min(w * 0.42, 220);
-      var bh = h * 0.24;
-      var by = roadTop - bh - 4;
+      var ax = asteroidX(shipX, crashMs);
+      var size = Math.min(w * 0.15, h * 0.2);
+
+      var c = CONFIG.CRASH;
+      var fallT = crashMs > c.HOLD ? (crashMs - c.HOLD) / (c.TOTAL - c.HOLD) : 0;
+      var fallY = fallT * size * 1.6;
+      var rot = fallT * 0.7;
 
       ctx.save();
       ctx.globalAlpha = alpha;
+      ctx.translate(ax, shipCenterY + fallY);
+      ctx.rotate(rot);
 
-      ctx.save();
-      roundRect(bx, by, bw, bh, 6);
-      ctx.clip();
-      ctx.fillStyle = "#111";
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = COLORS.amber;
-      var stripeW = 18;
-      for (var sx = -bh; sx < bw + bh; sx += stripeW * 2) {
-        ctx.beginPath();
-        ctx.moveTo(bx + sx, by + bh);
-        ctx.lineTo(bx + sx + stripeW, by + bh);
-        ctx.lineTo(bx + sx + stripeW + bh, by);
-        ctx.lineTo(bx + sx + bh, by);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
-
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 3;
-      roundRect(bx, by, bw, bh, 6);
+      var shape = state.crashAsteroidShape;
+      ctx.beginPath();
+      shape.radii.forEach(function (rr, i) {
+        var angle = (i / shape.radii.length) * Math.PI * 2;
+        var px = Math.cos(angle) * size * rr;
+        var py = Math.sin(angle) * size * rr * 0.85;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      var g = ctx.createRadialGradient(-size * 0.3, -size * 0.3, size * 0.1, 0, 0, size);
+      g.addColorStop(0, COLORS.rockLight);
+      g.addColorStop(1, COLORS.rockDark);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.5)";
+      ctx.lineWidth = 2;
       ctx.stroke();
 
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      shape.craters.forEach(function (cr) {
+        var cx = Math.cos(cr.angle) * size * cr.dist;
+        var cy = Math.sin(cr.angle) * size * cr.dist * 0.85;
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * cr.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
       ctx.fillStyle = "#fff";
-      ctx.font = "bold " + Math.max(12, bh * 0.17) + "px system-ui, sans-serif";
+      ctx.font = "bold " + Math.max(11, size * 0.16) + "px system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      wrapText(state.crashPhraseText.toUpperCase(), bx + bw / 2, by + bh / 2, bw - 16, bh * 0.24);
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur = 4;
+      wrapText(state.crashPhraseText.toUpperCase(), 0, 0, size * 1.5, size * 0.26);
+      ctx.shadowBlur = 0;
 
       ctx.restore();
     }
@@ -970,12 +1135,11 @@
       if (!w || !h) return;
       ctx.clearRect(0, 0, w, h);
 
-      var roadTop = h * 0.68;
-      var roadHeight = h - roadTop;
-
-      drawSky(w, roadTop);
-      drawTrees(w, roadTop);
-      drawRoad(w, roadTop, roadHeight);
+      drawSpace(w, h);
+      drawNebulae(w, h);
+      drawPlanets(w, h);
+      drawStars(w, h);
+      drawForegroundDust(w, h);
 
       var shakeX = 0, shakeY = 0, flashOn = false, showVignette = false;
       if (state.phase === "CRASHING") {
@@ -987,22 +1151,22 @@
           var c = CONFIG.CRASH;
           showVignette = cm >= c.APPROACH && cm <= c.APPROACH + c.SHAKE;
         }
-        flashOn = carFlashOn(cm);
+        flashOn = shipFlashOn(cm);
       }
 
       ctx.save();
       ctx.translate(shakeX, shakeY);
 
-      var carX = w * 0.22;
-      var carY = roadTop - carHeightFor(h);
-      drawCar(carX, carY, h, flashOn);
+      var shipX = w * 0.22;
+      var shipY = h * 0.55 - shipHeightFor(h) * 0.5;
+      var shipCenterY = shipY + shipHeightFor(h) * 0.5;
 
-      if (nitroActive() && state.phase === "PLAYING") {
-        drawNitroFlame(carX, carY, h);
-        drawSpeedLines(w, h);
-      }
+      if (state.phase === "PLAYING") drawEngineGlow(shipX, shipY, h, nitroActive());
+      drawShip(shipX, shipY, h, flashOn);
 
-      if (state.phase === "CRASHING") drawBarricade(w, h, carX, roadTop, state.crashMs);
+      if (state.phase === "PLAYING" && nitroActive()) drawStarStreaks(w, h);
+
+      if (state.phase === "CRASHING") drawAsteroid(w, h, shipX, shipCenterY, state.crashMs);
 
       ctx.restore();
 
@@ -1101,7 +1265,7 @@
       ".pr-puzzle-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--pr-muted);}",
       ".pr-sentence{display:flex;flex-wrap:wrap;align-items:center;gap:6px 5px;font-size:15px;line-height:1.4;}",
       ".pr-word-text{color:var(--pr-fg);}",
-      ".pr-slot{min-width:56px;height:30px;padding:0 8px;border:1.5px dashed var(--pr-border);border-radius:8px;background:transparent;color:var(--pr-fg);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}",
+      ".pr-slot{min-width:56px;height:30px;padding:0 8px;border:1.5px dashed rgba(233,236,233,0.45);border-radius:8px;background:rgba(233,236,233,0.04);color:var(--pr-fg);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}",
       ".pr-slot.pr-filled{border-style:solid;border-color:var(--pr-primary);background:rgba(34,197,94,0.12);color:var(--pr-primary);}",
       ".pr-pool{display:flex;flex-wrap:wrap;gap:8px;padding-top:2px;}",
       ".pr-pool-word{border:1px solid var(--pr-border);background:#1d2320;color:var(--pr-fg);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}",
