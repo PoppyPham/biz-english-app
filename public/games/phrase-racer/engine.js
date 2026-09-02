@@ -481,8 +481,8 @@
     var IMAGE_DIR = "/games/phrase-racer/images/";
     var SHIP_TIERS = [
       { file: "ship-1.png", minDistance: 0 },
-      { file: "ship-2.png", minDistance: 500 },
-      { file: "ship-3.png", minDistance: 2000 },
+      { file: "ship-2.png", minDistance: 2000 },
+      { file: "ship-3.png", minDistance: 5000 },
     ];
     var shipImages = {}; // tier file -> { img, ready }
     function preloadShipImages() {

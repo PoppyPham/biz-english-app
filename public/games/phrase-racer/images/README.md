@@ -10,8 +10,8 @@ needed either way.
 | File name     | Used when your best distance in this scope is... |
 |----------------|----------------------------------------------------|
 | `ship-1.png`   | 0 m or more (the default, starting ship)            |
-| `ship-2.png`   | 500 m or more                                        |
-| `ship-3.png`   | 2000 m or more                                       |
+| `ship-2.png`   | 2000 m or more                                       |
+| `ship-3.png`   | 5000 m or more                                       |
 
 You only need to add the tiers you want — e.g. add just `ship-2.png` and
 `ship-3.png` to keep the drawn ship as the starter look. "Best distance"
