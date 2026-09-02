@@ -1675,8 +1675,8 @@
         '<div class="pr-puzzle-wrap">' +
           '<div class="pr-puzzle-label">Fill in the blanks</div>' +
           '<div class="pr-sentence-row">' +
+          '<button type="button" class="pr-hint-btn" aria-label="Listen to the example sentence">🔊</button>' +
             '<div class="pr-sentence"></div>' +
-            '<button type="button" class="pr-hint-btn" aria-label="Listen to the example sentence">🔊</button>' +
           '</div>' +
           '<div class="pr-puzzle-label">Word bank</div>' +
           '<div class="pr-pool"></div>' +
