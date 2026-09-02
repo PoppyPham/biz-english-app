@@ -124,15 +124,22 @@ export function playStreak(streak: number) {
   const tier = Math.min(streak, 12)
   const base = 523.25 * Math.pow(2, tier / 24) // climbs up to ~1 octave
 
+  // A crisp little "pop" on the front of every hit, for extra punch.
+  noiseBurst(t, 0.07, { gain: 0.13, filterType: "bandpass", freq: 3200, q: 1.3 })
+
   tone(base, t, 0.1, { type: "triangle", gain: 0.18 })
   tone(base * 1.26, t + 0.07, 0.12, { type: "triangle", gain: 0.19 })
   tone(base * 1.5, t + 0.15, 0.22, { gain: 0.2, glideTo: base * 1.9 })
+  clap(t + 0.16) // every correct answer gets at least one clap
 
-  if (streak >= 3) tone(base * 2.5, t + 0.22, 0.16, { gain: 0.11 })
+  if (streak >= 3) {
+    tone(base * 2.5, t + 0.22, 0.16, { gain: 0.11 })
+    clap(t + 0.26)
+  }
   if (streak >= 5) {
-    tone(base * 3, t + 0.26, 0.18, { gain: 0.12 })
-    clap(t + 0.16)
-    clap(t + 0.24)
+    tone(base * 3, t + 0.28, 0.18, { gain: 0.12 })
+    clap(t + 0.32)
+    clap(t + 0.38)
   }
 }
 
@@ -169,61 +176,139 @@ export function playGameOver() {
   })
 }
 
-/** A short filtered-noise "clap" — building block for a light applause swell. */
-function clap(startTime: number) {
+/**
+ * General-purpose filtered-noise burst — the raw material behind claps,
+ * pops, explosion "bangs", and crowd-noise swells below.
+ */
+function noiseBurst(
+  startTime: number,
+  duration: number,
+  {
+    gain = 0.15,
+    filterType = "bandpass" as BiquadFilterType,
+    freq = 2000,
+    freqEnd,
+    q = 1,
+  }: {
+    gain?: number
+    filterType?: BiquadFilterType
+    freq?: number
+    freqEnd?: number
+    q?: number
+  } = {}
+) {
   if (!isSoundEnabled()) return
   const audio = getCtx()
   if (!audio) return
 
-  const dur = 0.05
   const sampleRate = audio.sampleRate
-  const buffer = audio.createBuffer(1, Math.floor(sampleRate * dur), sampleRate)
+  const buffer = audio.createBuffer(1, Math.floor(sampleRate * duration), sampleRate)
   const data = buffer.getChannelData(0)
   for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
 
   const src = audio.createBufferSource()
   src.buffer = buffer
 
-  const bandpass = audio.createBiquadFilter()
-  bandpass.type = "bandpass"
-  bandpass.frequency.value = 2200 + Math.random() * 1500
-  bandpass.Q.value = 1
+  const filter = audio.createBiquadFilter()
+  filter.type = filterType
+  filter.frequency.setValueAtTime(freq, startTime)
+  if (freqEnd) filter.frequency.exponentialRampToValueAtTime(freqEnd, startTime + duration)
+  filter.Q.value = q
 
   const amp = audio.createGain()
   amp.gain.setValueAtTime(0, startTime)
-  amp.gain.linearRampToValueAtTime(0.11, startTime + 0.005)
-  amp.gain.exponentialRampToValueAtTime(0.0001, startTime + dur)
+  amp.gain.linearRampToValueAtTime(gain, startTime + Math.min(0.02, duration / 4))
+  amp.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
 
-  src.connect(bandpass).connect(amp).connect(audio.destination)
+  src.connect(filter).connect(amp).connect(audio.destination)
   src.start(startTime)
-  src.stop(startTime + dur + 0.01)
+  src.stop(startTime + duration + 0.02)
+}
+
+/** A short filtered-noise "clap" — building block for an applause swell. */
+function clap(startTime: number) {
+  noiseBurst(startTime, 0.05, {
+    gain: 0.13,
+    filterType: "bandpass",
+    freq: 2200 + Math.random() * 1500,
+    q: 1,
+  })
+}
+
+/** A rising "whistle" — the firework-launch sound, before the burst lands. */
+function whistleUp(startTime: number, duration: number) {
+  if (!isSoundEnabled()) return
+  const audio = getCtx()
+  if (!audio) return
+  const osc = audio.createOscillator()
+  const amp = audio.createGain()
+  osc.type = "sine"
+  osc.frequency.setValueAtTime(320, startTime)
+  osc.frequency.exponentialRampToValueAtTime(1900, startTime + duration)
+  amp.gain.setValueAtTime(0, startTime)
+  amp.gain.linearRampToValueAtTime(0.13, startTime + duration * 0.7)
+  amp.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+  osc.connect(amp).connect(audio.destination)
+  osc.start(startTime)
+  osc.stop(startTime + duration + 0.02)
+}
+
+/** A firework "BANG" — a punchy low burst plus a sub-bass thump for weight. */
+function boom(startTime: number) {
+  noiseBurst(startTime, 0.35, {
+    gain: 0.32,
+    filterType: "lowpass",
+    freq: 1200,
+    freqEnd: 200,
+    q: 0.7,
+  })
+  tone(85, startTime, 0.3, { type: "sine", gain: 0.22, glideTo: 45 })
+}
+
+/** A scatter of high, randomly-pitched twinkles — firework sparks raining down. */
+function sparkleShower(startTime: number, count: number, spreadSeconds: number) {
+  const pitches = [1567.98, 1760, 1864.66, 2093, 2349.32, 2489.02, 2793.83, 3135.96]
+  for (let i = 0; i < count; i++) {
+    const freq = pitches[Math.floor(Math.random() * pitches.length)]
+    tone(freq, startTime + Math.random() * spreadSeconds, 0.12 + Math.random() * 0.08, {
+      gain: 0.05 + Math.random() * 0.05,
+    })
+  }
+}
+
+/** A big, roaring round of applause — a sustained cheer bed plus dense claps. */
+function crowdCheer(startTime: number, duration: number) {
+  noiseBurst(startTime, duration, {
+    gain: 0.15,
+    filterType: "bandpass",
+    freq: 1200,
+    freqEnd: 2600,
+    q: 0.6,
+  })
+  const clapCount = Math.round(duration * 16)
+  for (let i = 0; i < clapCount; i++) clap(startTime + Math.random() * duration)
 }
 
 /**
- * Big "ten-ten-ten-TEN!" celebration — a four-note ascending fanfare that
- * lands on a big ringing chord, a sparkle flourish, and a full round of
- * applause. Used for the flashcard "memorized" reward, which should feel
- * like a genuine prize, not just a chime.
+ * Big fireworks-style celebration — launch whistle, BANG, a shower of
+ * sparkles, and a roaring round of applause, with a bright chord landing
+ * on the burst so it still feels musical. Used for the flashcard
+ * "memorized" reward, which should feel like a genuine prize, not a chime.
  */
 export function playCelebrate() {
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
 
-  // "Ten... ten... ten... TEN!" — repeated note building into the payoff.
-  tone(523.25, t, 0.16, { type: "triangle", gain: 0.2 }) // C5
-  tone(523.25, t + 0.19, 0.16, { type: "triangle", gain: 0.2 }) // C5
-  tone(659.25, t + 0.38, 0.16, { type: "triangle", gain: 0.21 }) // E5
-  tone(783.99, t + 0.57, 0.12, { type: "triangle", gain: 0.22 }) // G5 lead-in
-  tone(1046.5, t + 0.63, 0.55, { gain: 0.25, glideTo: 1318.51 }) // C6 — big ring
+  whistleUp(t, 0.3) // launch
+  boom(t + 0.3) // BANG!
 
-  // sparkle flourish, right as the big note lands
-  ;[1567.98, 1864.66, 2093, 2489.02, 2793.83].forEach((freq, i) => {
-    tone(freq, t + 0.78 + i * 0.06, 0.14, { gain: 0.09 })
-  })
+  // bright chord landing right on the burst
+  tone(659.25, t + 0.32, 0.4, { type: "triangle", gain: 0.19 })
+  tone(1046.5, t + 0.35, 0.55, { gain: 0.23, glideTo: 1318.51 })
 
-  // a fuller, longer round of applause
-  for (let i = 0; i < 14; i++) clap(t + 0.1 + Math.random() * 0.95)
+  sparkleShower(t + 0.42, 22, 1.0) // sparks raining down
+  crowdCheer(t + 0.45, 1.5) // the crowd goes wild
 }
 
 /** Big celebratory fanfare for beating a high score. */
