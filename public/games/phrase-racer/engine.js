@@ -1288,7 +1288,13 @@
 
       ctx.save();
       ctx.translate(x, y + bob + hop);
-      var bestDistanceM = typeof opts.getBestDistanceM === "function" ? opts.getBestDistanceM() : 0;
+      // Ship tier reflects whichever is further: the saved best distance
+      // (so the upgrade carries over into future runs) or how far the
+      // player has already flown THIS run (so crossing a milestone
+      // upgrades the ship immediately, instead of only unlocking it
+      // retroactively after the run ends and a new best gets saved).
+      var savedBestDistanceM = typeof opts.getBestDistanceM === "function" ? opts.getBestDistanceM() : 0;
+      var bestDistanceM = Math.max(savedBestDistanceM, state.distanceM || 0);
       var shipImgEntry = shipImages[pickShipTierFile(bestDistanceM)];
       if (shipImgEntry && shipImgEntry.ready && !flashOn) {
         drawImageContainLeft(shipImgEntry.img, 0, 0, shipW, shipH);

@@ -15,9 +15,12 @@ needed either way.
 
 You only need to add the tiers you want — e.g. add just `ship-2.png` and
 `ship-3.png` to keep the drawn ship as the starter look. "Best distance"
-is your saved high score for whichever category/Your-Words/all-categories
-run you're playing (the same number shown on the Leaderboard's Phrase
-Racer tab).
+is whichever is further: your saved high score for this category/
+Your-Words/all-categories scope (the same number shown on the
+Leaderboard's Phrase Racer tab), or how far you've already flown in the
+*current* run — so crossing a tier's threshold upgrades the ship
+immediately, mid-run, not just retroactively in a future run once that
+run's score gets saved as a new best.
 
 **Orientation matters**: draw the ship facing **right** (nose/front on the
 right edge of the image, engine/tail on the left) — that's the direction
