@@ -180,9 +180,19 @@ export function QuizGame({
     setPopup({ key: popupKey.current, delta })
   }
 
+  // Mirrors `answered` but read/written synchronously and independent of
+  // any closure — a stray duplicate timer (e.g. left over from a hot
+  // reload) can still be holding a stale closure where `answered` was
+  // captured as `false`, which would let it slip past a plain state check
+  // and silently skip a question out from under the player. A ref can't
+  // go stale like that, since it's the same mutable object every call
+  // reads from.
+  const answeredRef = useRef(false)
+
   const handleAnswer = useCallback(
     (optionIdx: number | null) => {
-      if (answered || !current || done) return
+      if (answeredRef.current || !current || done) return
+      answeredRef.current = true
       setAnswered(true)
       setSelected(optionIdx)
       const correct =
@@ -194,19 +204,7 @@ export function QuizGame({
         setCorrectCount((c) => c + 1)
         setScore((s) => s + POINTS_CORRECT)
         triggerPopup(POINTS_CORRECT)
-        setStreak((s) => {
-          const next = s + 1
-          setBestStreak((b) => Math.max(b, next))
-          if (next % STREAK_FOR_BONUS_LIFE === 0) {
-            setLives((l) => l + 1)
-            setLifeBonusFlash(true)
-            setTimeout(() => setLifeBonusFlash(false), 1800)
-            playExtraLife()
-          } else {
-            playStreak(next)
-          }
-          return next
-        })
+        setStreak((s) => s + 1)
       } else {
         setScore((s) => Math.max(0, s - POINTS_WRONG))
         triggerPopup(-POINTS_WRONG)
@@ -219,7 +217,7 @@ export function QuizGame({
       void saveResult(current.phrase.id, correct)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [answered, current, done]
+    [current, done]
   )
 
   // Game-over side effects: high score save/fanfare, or a game-over tone.
@@ -251,6 +249,30 @@ export function QuizGame({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done])
+
+  // Streak-bonus side effects (best-streak tracking, the bonus life every
+  // Nth correct answer in a row, and the combo chime otherwise). Kept as
+  // an effect reacting to `streak` — rather than inline inside the
+  // `setStreak` updater in handleAnswer — because React (in development)
+  // can invoke a state updater function more than once per call to help
+  // catch impure updaters; an updater that also calls setLives/plays a
+  // sound isn't safe to double-invoke; a `useEffect` keyed on the
+  // resulting value only ever fires once per actual change.
+  const prevStreakRef = useRef(0)
+  useEffect(() => {
+    if (streak > prevStreakRef.current) {
+      setBestStreak((b) => Math.max(b, streak))
+      if (streak % STREAK_FOR_BONUS_LIFE === 0) {
+        setLives((l) => l + 1)
+        setLifeBonusFlash(true)
+        setTimeout(() => setLifeBonusFlash(false), 1800)
+        playExtraLife()
+      } else {
+        playStreak(streak)
+      }
+    }
+    prevStreakRef.current = streak
+  }, [streak])
 
   // Per-question countdown
   useEffect(() => {
@@ -290,6 +312,7 @@ export function QuizGame({
     }
     setIndex((i) => i + 1)
     setSelected(null)
+    answeredRef.current = false
     setAnswered(false)
     setTimeLeft(TIMER_SECONDS)
   }
@@ -298,6 +321,7 @@ export function QuizGame({
     setQuestions(buildDeck(phrases))
     setIndex(0)
     setSelected(null)
+    answeredRef.current = false
     setAnswered(false)
     setScore(0)
     setLives(STARTING_LIVES)
