@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { House, Gamepad2, BarChart2 } from "lucide-react"
+import { House, Gamepad2, BarChart2, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", Icon: House },
   { href: "/games", label: "Games", Icon: Gamepad2 },
   { href: "/progress", label: "Progress", Icon: BarChart2 },
+  { href: "/leaderboard", label: "Rank", Icon: Trophy },
 ]
 
 export function BottomNav() {

@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/games", label: "Games" },
   { href: "/progress", label: "Progress" },
+  { href: "/leaderboard", label: "Leaderboard" },
 ]
 
 export async function TopNav() {
