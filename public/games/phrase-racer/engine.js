@@ -552,6 +552,7 @@
     var restartBtn = container.querySelector(".pr-restart-btn");
     var celebrateEl = container.querySelector(".pr-celebrate");
     var continueBtn = container.querySelector(".pr-continue-btn");
+    var hintBtn = container.querySelector(".pr-hint-btn");
 
     var cssW = 0, cssH = 0;
 
@@ -1470,7 +1471,7 @@
       if (celebrateTimeout) clearTimeout(celebrateTimeout);
       celebrateTimeout = setTimeout(function () {
         celebrateEl.classList.remove("pr-show");
-      }, 900);
+      }, 2500);
     }
 
     function render() {
@@ -1557,6 +1558,9 @@
     startBtn.addEventListener("click", startGame);
     restartBtn.addEventListener("click", restart);
     continueBtn.addEventListener("click", continueAfterReview);
+    hintBtn.addEventListener("click", function () {
+      if (state.run) speakText(state.run.q.fullSentence);
+    });
     poolEl.addEventListener("click", function (e) {
       var btn = e.target.closest(".pr-pool-word");
       if (btn) onPoolClick(Number(btn.dataset.id));
@@ -1611,7 +1615,10 @@
       ".pr-final-distance{color:var(--pr-amber);font-weight:800;}",
       ".pr-puzzle-wrap{flex:1 1 0;min-height:0;background:var(--pr-card);border-top:1px solid var(--pr-border);padding:10px 14px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}",
       ".pr-puzzle-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--pr-muted);}",
-      ".pr-sentence{display:flex;flex-wrap:wrap;align-items:center;gap:6px 5px;font-size:15px;line-height:1.4;}",
+      ".pr-sentence-row{display:flex;align-items:center;gap:8px;}",
+      ".pr-sentence{flex:1 1 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 5px;font-size:15px;line-height:1.4;}",
+      ".pr-hint-btn{flex-shrink:0;width:32px;height:32px;border-radius:999px;border:1px solid var(--pr-border);background:#1d2320;color:var(--pr-fg);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}",
+      ".pr-hint-btn:active{transform:scale(0.94);}",
       ".pr-word-text{color:var(--pr-fg);}",
       ".pr-slot{min-width:56px;height:30px;padding:0 8px;border:1.5px dashed rgba(233,236,233,0.45);border-radius:8px;background:rgba(233,236,233,0.04);color:var(--pr-fg);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}",
       ".pr-slot.pr-filled{border-style:solid;border-color:var(--pr-primary);background:rgba(34,197,94,0.12);color:var(--pr-primary);}",
@@ -1624,7 +1631,7 @@
       ".pr-celebrate.pr-hidden{display:none;}",
       ".pr-celebrate.pr-show{opacity:1;transform:translate(-50%,-50%) scale(1);}",
       ".pr-celebrate-word{font-size:26px;font-weight:800;color:var(--pr-primary);text-shadow:0 2px 12px rgba(34,197,94,0.6);}",
-      ".pr-celebrate-sub{margin-top:2px;font-size:13px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.8);}",
+      ".pr-celebrate-sub{margin-top:2px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.8);}",
       ".pr-continue-btn{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:var(--pr-primary);color:var(--pr-primary-fg);border:none;border-radius:999px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,0.4);}",
       ".pr-continue-btn.pr-hidden{display:none;}",
       ".pr-continue-btn:active{transform:translateX(-50%) scale(0.96);}",
@@ -1667,7 +1674,10 @@
         '</div>' +
         '<div class="pr-puzzle-wrap">' +
           '<div class="pr-puzzle-label">Fill in the blanks</div>' +
-          '<div class="pr-sentence"></div>' +
+          '<div class="pr-sentence-row">' +
+            '<div class="pr-sentence"></div>' +
+            '<button type="button" class="pr-hint-btn" aria-label="Listen to the example sentence">🔊</button>' +
+          '</div>' +
           '<div class="pr-puzzle-label">Word bank</div>' +
           '<div class="pr-pool"></div>' +
         '</div>' +
