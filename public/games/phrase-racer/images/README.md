@@ -38,7 +38,7 @@ so that one moment falls back automatically.
 
 Put any number of PNGs (transparent background recommended, roughly
 square) directly in `planets/`, named `planet-1.png`, `planet-2.png`, etc.
-— up to 6 are checked (`planet-1.png` through `planet-6.png`). Whichever
+— up to 9 are checked (`planet-1.png` through `planet-9.png`). Whichever
 of those exist get used, picked at random as you fly past.
 
 ### Per-category theming
@@ -66,11 +66,21 @@ built-in drawn variety (colors, rings, bands).
 
 `ship-1/2/3.png` are Kenney's "Space Shooter Redux" pack
 (CC0 / public domain, no attribution required — https://kenney.nl/assets/space-shooter-extension),
-rotated 90° to face right. `planets/planet-1.png` (Jupiter) and
-`planet-2.png` (Mars) are real NASA photographs, public domain via
-Wikimedia Commons:
-[Jupiter (transparent)](https://commons.wikimedia.org/wiki/File:Jupiter_(transparent).png),
-[Mars transparent background](https://commons.wikimedia.org/wiki/File:Mars_transparent_background.png)
-(CC0). `planet-3.png` / `planet-4.png` are simple hand-drawn placeholders.
-Swap any of these for your own art whenever you like — they're just a
-working starting point, not final assets.
+rotated 90° to face right.
+
+`planets/planet-1.png` through `planet-9.png` are all real NASA
+photographs, public domain via Wikimedia Commons — the full classic
+nine-planet set:
+
+1. [Jupiter (transparent)](https://commons.wikimedia.org/wiki/File:Jupiter_(transparent).png)
+2. [Mars transparent background](https://commons.wikimedia.org/wiki/File:Mars_transparent_background.png)
+3. [Planet Mercury (GPN-2000-000465, transparent)](https://commons.wikimedia.org/wiki/File:Planet_Mercury_-_GPN-2000-000465_-_transparent.png)
+4. [Venus globe (transparent background)](https://commons.wikimedia.org/wiki/File:Venus_globe_-_transparent_background.png)
+5. [Earth Western Hemisphere (transparent background)](https://commons.wikimedia.org/wiki/File:Earth_Western_Hemisphere_transparent_background.png)
+6. [Saturnx (Voyager 2, transparent)](https://commons.wikimedia.org/wiki/File:Saturnx.png)
+7. [Uranus2 (Voyager 2, transparent)](https://commons.wikimedia.org/wiki/File:Uranus2-transparent.png)
+8. [Neptune with rings (transparent background)](https://commons.wikimedia.org/wiki/File:Neptune_with_rings_(transparent_background).png)
+9. [Pluto — New Horizons flyby (transparent)](https://commons.wikimedia.org/wiki/File:PIA19873-Pluto-NewHorizons-FlyingPastImage-20150714-transparent.png)
+
+Swap any of these for your own art whenever you like — they're a working
+starting point, not final assets.

@@ -502,7 +502,7 @@
       return chosen;
     }
 
-    var PLANET_IMAGE_CANDIDATE_COUNT = 6;
+    var PLANET_IMAGE_CANDIDATE_COUNT = 9;
     var readyPlanetImages = [];
     function preloadPlanetImages(categorySlug) {
       var urls = [];
