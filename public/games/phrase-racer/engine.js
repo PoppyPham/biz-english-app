@@ -24,7 +24,7 @@
     EXTRA_LIFE_STREAK: 10,
     DISTANCE_K: 0.277,
     PX_PER_KMH: 6,
-    MAX_SCROLL_PX_S: 900,
+    MAX_SCROLL_PX_S: 1400,
     MAX_DT_MS: 50,
     CRASH: { APPROACH: 180, SHAKE: 520, HOLD: 1700, FADE: 300, TOTAL: 2000 },
     HOP: 350,
@@ -864,8 +864,8 @@
       var pxPerSec = Math.min(speedKmh * CONFIG.PX_PER_KMH, CONFIG.MAX_SCROLL_PX_S);
       var d = (pxPerSec * dt) / 1000;
       state.scroll.road = (state.scroll.road + d) % ROAD_DASH;
-      state.scroll.near = (state.scroll.near + d * 0.6) % TREE_NEAR_SPACING;
-      state.scroll.far = (state.scroll.far + d * 0.3) % TREE_FAR_SPACING;
+      state.scroll.near = (state.scroll.near + d * 0.65) % TREE_NEAR_SPACING;
+      state.scroll.far = (state.scroll.far + d * 0.5) % TREE_FAR_SPACING;
     }
 
     function shakeOffset(crashMs) {
