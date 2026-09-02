@@ -666,7 +666,7 @@
         hopMs: null,
         wheelAngle: 0,
         run: null,
-        scroll: { far: 0, near: 0, road: 0 },
+        scroll: { far: 0, near: 0, road: 0, farTotal: 0 },
         reducedMotion:
           typeof window.matchMedia === "function" &&
           window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -866,6 +866,13 @@
       state.scroll.road = (state.scroll.road + d) % ROAD_DASH;
       state.scroll.near = (state.scroll.near + d * 0.65) % TREE_NEAR_SPACING;
       state.scroll.far = (state.scroll.far + d * 0.5) % TREE_FAR_SPACING;
+      // Unbounded — planets/nebulae pick their slot index from this (see
+      // drawPlanets/drawNebulae). Deriving that index from the *wrapped*
+      // scroll.far above would work for pixel positioning but caps the
+      // achievable index range at one wrap period (140px) regardless of
+      // how much bigger a planet/nebula's own spacing is, so the same 1-2
+      // slots would cycle forever instead of ever reaching new ones.
+      state.scroll.farTotal += d * 0.5;
     }
 
     function shakeOffset(crashMs) {
@@ -998,12 +1005,15 @@
       ctx.fillRect(0, 0, w, h);
     }
 
-    // Soft, sparse, very-slow-moving color washes for depth. Spacing is a
-    // clean multiple of TREE_FAR_SPACING so it recycles in step with
-    // advanceScroll()'s wrap of scroll.far, with no visible seam.
+    // Soft, sparse, very-slow-moving color washes for depth. Uses the
+    // unbounded scroll.farTotal (not the wrapped scroll.far) so the slot
+    // index genuinely keeps climbing over a session instead of cycling
+    // through the same couple of slots every 140px.
     function drawNebulae(w, h) {
-      for (var x = -state.scroll.far; x < w + NEBULA_SPACING; x += NEBULA_SPACING) {
-        var k = Math.round((x + state.scroll.far) / NEBULA_SPACING);
+      var farTotal = state.scroll.farTotal;
+      var farOffset = farTotal % NEBULA_SPACING;
+      for (var x = -farOffset; x < w + NEBULA_SPACING; x += NEBULA_SPACING) {
+        var k = Math.round((x + farTotal) / NEBULA_SPACING);
         var color = NEBULA_COLORS[Math.abs(k) % NEBULA_COLORS.length];
         var y = h * (0.1 + pseudoRandom(k * 2.7) * 0.5);
         var r = h * (0.35 + pseudoRandom(k * 8.8) * 0.25);
@@ -1065,10 +1075,16 @@
       ctx.restore();
     }
 
+    // Same unbounded-index fix as drawNebulae — indexed off scroll.farTotal
+    // (never wraps) instead of the pixel-positioning scroll.far (wraps every
+    // 140px), so the slot index actually keeps climbing over a session
+    // instead of cycling through the same 1-2 planets forever.
     function drawPlanets(w, h) {
+      var farTotal = state.scroll.farTotal;
+      var farOffset = farTotal % PLANET_SPACING;
       if (readyPlanetImages.length > 0) {
-        for (var xi = -state.scroll.far; xi < w + PLANET_SPACING; xi += PLANET_SPACING) {
-          var ki = Math.round((xi + state.scroll.far) / PLANET_SPACING);
+        for (var xi = -farOffset; xi < w + PLANET_SPACING; xi += PLANET_SPACING) {
+          var ki = Math.round((xi + farTotal) / PLANET_SPACING);
           var img = readyPlanetImages[Math.floor(pseudoRandom(ki * 17.3) * readyPlanetImages.length)];
           var yi = h * (0.08 + pseudoRandom(ki * 9.1) * 0.62);
           var size = h * (0.09 + pseudoRandom(ki * 4.4) * 0.22);
@@ -1076,8 +1092,8 @@
         }
         return;
       }
-      for (var x = -state.scroll.far; x < w + PLANET_SPACING; x += PLANET_SPACING) {
-        var k = Math.round((x + state.scroll.far) / PLANET_SPACING);
+      for (var x = -farOffset; x < w + PLANET_SPACING; x += PLANET_SPACING) {
+        var k = Math.round((x + farTotal) / PLANET_SPACING);
         var palIdx = Math.floor(pseudoRandom(k * 17.3) * PLANET_PALETTES.length);
         var pal = PLANET_PALETTES[palIdx];
         var y = h * (0.08 + pseudoRandom(k * 9.1) * 0.62);
