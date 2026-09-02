@@ -118,14 +118,42 @@
 
   // Speaks the full (un-blanked) example sentence after every answer, right
   // or wrong, so the player hears the phrase used correctly regardless.
+  // Voice-picking logic ported verbatim from lib/speak.ts (the pronunciation
+  // speaker button already used across Quiz/Flashcard/phrase pages) rather
+  // than reinvented here — that one is proven to sound natural, whereas an
+  // independent pick risks landing on one of macOS's "novelty" voices
+  // (Albert, Zarvox, ...) that sort in ahead of the real ones by name.
+  var cachedVoice; // undefined = not yet resolved, null = resolved to "none"
+  function pickVoice() {
+    if (cachedVoice !== undefined) return cachedVoice;
+    if (!window.speechSynthesis) return null;
+    var voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+    function byName(re) {
+      return voices.find(function (v) { return re.test(v.name) && v.lang.toLowerCase().indexOf("en") === 0; });
+    }
+    cachedVoice =
+      byName(/Samantha|Google US English|Microsoft (Aria|Jenny|Michelle)|Karen|Daniel/i) ||
+      voices.find(function (v) { return v.lang === "en-US" && v.localService; }) ||
+      voices.find(function (v) { return v.lang.toLowerCase().indexOf("en") === 0; }) ||
+      null;
+    return cachedVoice;
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function () { cachedVoice = undefined; };
+  }
+
   function speakText(text) {
     try {
       if (!text || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text);
       u.lang = "en-US";
-      u.rate = 1;
+      u.rate = 0.9;
       u.pitch = 1;
+      u.volume = 0.85;
+      var voice = pickVoice();
+      if (voice) u.voice = voice;
+      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch (e) { /* ignore */ }
   }
