@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { Layers, ListChecks, ArrowRight } from "lucide-react"
+import { Layers, ListChecks, ArrowRight, Rocket } from "lucide-react"
 import { YOUR_WORDS, type Category } from "@/lib/types"
 
 export default async function GamesPage() {
@@ -77,6 +77,27 @@ export default async function GamesPage() {
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </Link>
+
+          <a
+            href="/games/phrase-racer/index.html"
+            target="_blank"
+            rel="noopener"
+            className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40 hover:bg-surface-hover"
+          >
+            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
+              <Rocket className="size-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold">Phrase Racer</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Race against the clock. Fill in phrases before you crash.
+              </p>
+            </div>
+            <span className="mt-1 flex items-center gap-1 text-sm text-primary">
+              Play
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </a>
         </section>
 
         {/* ── Practice by category ── */}
