@@ -4,12 +4,13 @@ import { useMemo, useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMasteryProgress } from "@/lib/mastery"
 import { cn } from "@/lib/utils"
-import { Trophy, Crown, Medal, BookOpen } from "lucide-react"
+import { Trophy, Crown, Medal, BookOpen, Rocket } from "lucide-react"
 
 export interface LeaderboardRow {
   user_id: string
   display_name: string | null
   best_score: number
+  best_racer_score: number
   learned_count: number
 }
 
@@ -29,7 +30,13 @@ const RANK_STYLE = [
   { icon: Medal, color: "text-amber-600", glow: "bg-amber-600/15" },
 ]
 
-type Mode = "quiz" | "flashcard"
+type Mode = "quiz" | "flashcard" | "racer"
+
+const STAT_KEY: Record<Mode, keyof LeaderboardRow> = {
+  quiz: "best_score",
+  flashcard: "learned_count",
+  racer: "best_racer_score",
+}
 
 const MODES: {
   key: Mode
@@ -40,6 +47,7 @@ const MODES: {
 }[] = [
   { key: "quiz", label: "Quiz", icon: Trophy, statLabel: "score", statColor: "text-yellow-400" },
   { key: "flashcard", label: "Flashcard", icon: BookOpen, statLabel: "learned", statColor: "text-primary" },
+  { key: "racer", label: "Phrase Racer", icon: Rocket, statLabel: "m", statColor: "text-cyan-400" },
 ]
 
 export function LeaderboardTabs({
@@ -53,8 +61,8 @@ export function LeaderboardTabs({
   const activeMode = MODES.find((m) => m.key === mode)!
 
   const sorted = useMemo(() => {
-    const key = mode === "quiz" ? "best_score" : "learned_count"
-    return [...rows].sort((a, b) => b[key] - a[key])
+    const key = STAT_KEY[mode]
+    return [...rows].sort((a, b) => (b[key] as number) - (a[key] as number))
   }, [rows, mode])
 
   return (
@@ -84,7 +92,7 @@ export function LeaderboardTabs({
           const MasteryIcon = mastery.current.icon
           const isMe = row.user_id === currentUserId
           const name = row.display_name?.trim() || "Anonymous"
-          const stat = mode === "quiz" ? row.best_score : row.learned_count
+          const stat = row[STAT_KEY[mode]] as number
 
           return (
             <div

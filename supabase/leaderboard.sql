@@ -3,10 +3,13 @@
 --   • profiles: public-readable mirror of auth.users' display_name, kept in
 --     sync via trigger. auth.users itself is never exposed to clients.
 --   • get_leaderboard(): SECURITY DEFINER RPC that aggregates every user's
---     best quiz score (across all scopes) and learned-phrase count, bypassing
---     the "own row only" RLS on quiz_high_scores / user_progress — this is
+--     best quiz score, best Phrase Racer score (each across all scopes), and
+--     learned-phrase count, bypassing the "own row only" RLS on
+--     quiz_high_scores / phrase_racer_high_scores / user_progress — this is
 --     the one place those numbers are intentionally shown across users.
 -- Run in Supabase SQL Editor. Safe to re-run.
+-- Requires phrase-racer-high-scores.sql to have been run first (this
+-- function references that table).
 -- ============================================================================
 
 create table if not exists public.profiles (
@@ -58,14 +61,20 @@ from auth.users
 on conflict (user_id) do update
   set display_name = excluded.display_name;
 
--- Ranked leaderboard: every user, their best quiz score across all scopes,
--- and their total learned-phrase count (used to derive Word Mastery Level).
+-- Ranked leaderboard: every user, their best quiz score and best Phrase
+-- Racer score (each across all scopes), and their total learned-phrase
+-- count (used to derive Word Mastery Level).
+-- The OUT-parameter row shape changed (added best_racer_score), and
+-- Postgres won't let create-or-replace change a function's return type —
+-- drop it first so re-running this file stays safe.
+drop function if exists public.get_leaderboard();
 create or replace function public.get_leaderboard()
 returns table (
-  user_id       uuid,
-  display_name  text,
-  best_score    integer,
-  learned_count integer
+  user_id          uuid,
+  display_name     text,
+  best_score       integer,
+  best_racer_score integer,
+  learned_count    integer
 )
 language sql
 security definer
@@ -76,9 +85,11 @@ as $$
     p.user_id,
     p.display_name,
     coalesce(max(q.high_score), 0)::integer as best_score,
+    coalesce(max(r.high_score), 0)::integer as best_racer_score,
     coalesce(lc.learned_count, 0)::integer as learned_count
   from public.profiles p
   left join public.quiz_high_scores q on q.user_id = p.user_id
+  left join public.phrase_racer_high_scores r on r.user_id = p.user_id
   left join (
     select user_id, count(*) as learned_count
     from public.user_progress

@@ -78,10 +78,8 @@ export default async function GamesPage() {
             </span>
           </Link>
 
-          <a
-            href="/games/phrase-racer/index.html"
-            target="_blank"
-            rel="noopener"
+          <Link
+            href="/games/phrase-racer"
             className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40 hover:bg-surface-hover"
           >
             <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
@@ -94,10 +92,10 @@ export default async function GamesPage() {
               </p>
             </div>
             <span className="mt-1 flex items-center gap-1 text-sm text-primary">
-              Play
+              Play all
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
-          </a>
+          </Link>
         </section>
 
         {/* ── Practice by category ── */}
@@ -132,6 +130,12 @@ export default async function GamesPage() {
                     >
                       Quiz
                     </Link>
+                    <Link
+                      href={`/games/phrase-racer?category=${YOUR_WORDS.slug}`}
+                      className="rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                    >
+                      Phrase Racer
+                    </Link>
                   </div>
                 </div>
               )}
@@ -159,6 +163,12 @@ export default async function GamesPage() {
                       className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                     >
                       Quiz
+                    </Link>
+                    <Link
+                      href={`/games/phrase-racer?category=${cat.slug}`}
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                    >
+                      Phrase Racer
                     </Link>
                   </div>
                 </div>
