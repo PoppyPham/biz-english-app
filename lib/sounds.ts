@@ -49,6 +49,27 @@ function primeAudioContext() {
   } catch {
     // Non-fatal — resume() above already ran.
   }
+  holdPlaybackAudioSession()
+}
+
+// iOS Safari mutes Web Audio API output whenever the hardware ring/silent
+// switch is flipped to silent — unless the page's audio session has been
+// put in the "playback" category, which the switch doesn't duck. Looping a
+// silent <audio> element (started from the same gesture as the priming
+// above) is the standard trick to hold the session in that category for
+// the rest of the page's life, independent of the AudioContext itself.
+function holdPlaybackAudioSession() {
+  if (typeof Audio === "undefined") return
+  try {
+    const el = new Audio(
+      "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA=="
+    )
+    el.loop = true
+    el.volume = 0.01
+    void el.play().catch(() => {})
+  } catch {
+    // Non-fatal — the AudioContext unlock above is the primary mechanism.
+  }
 }
 
 if (typeof window !== "undefined") {

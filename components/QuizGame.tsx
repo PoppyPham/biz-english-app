@@ -27,6 +27,7 @@ import {
   playGameOver,
   playHighScore,
 } from "@/lib/sounds"
+import { speakText } from "@/lib/speak"
 import { ExampleQuote } from "@/components/ExampleQuote"
 import type { Phrase } from "@/lib/types"
 
@@ -151,6 +152,14 @@ export function QuizGame({
   }, [userId, scope])
 
   const current = questions[index]
+
+  // Auto-pronounce the phrase the moment a new question appears — same as
+  // the flashcard game — so the user hears it without having to tap the
+  // speaker icon first.
+  useEffect(() => {
+    if (current) speakText(current.phrase.phrase)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current])
 
   async function saveResult(phraseId: string, correct: boolean) {
     if (!userId) return
