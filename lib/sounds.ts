@@ -50,6 +50,7 @@ function primeAudioContext() {
     // Non-fatal — resume() above already ran.
   }
   holdPlaybackAudioSession()
+  decodeSoundFiles()
 }
 
 // iOS Safari mutes Web Audio API output whenever the hardware ring/silent
@@ -83,6 +84,80 @@ if (typeof window !== "undefined") {
   )
 }
 
+// ── Optional user-supplied sound files ──────────────────────────────────
+// Drop an audio file into public/sounds/ using one of the exact names
+// below to replace that synthesized effect everywhere it's used (Quiz,
+// Flashcard, Progress) with your own recording — nothing to wire up in
+// code. Anything not provided (or that fails to load) keeps using the
+// built-in synthesis. See public/sounds/README.md.
+const SOUND_DIR = "/sounds/"
+const SOUND_FILES: Record<string, string> = {
+  neutral: "neutral.mp3",
+  flip: "flip.mp3",
+  complete: "complete.mp3",
+  streak: "streak.mp3",
+  lifeLost: "life-lost.mp3",
+  extraLife: "extra-life.mp3",
+  gameOver: "game-over.mp3",
+  celebrate: "celebrate.mp3",
+  highScore: "high-score.mp3",
+}
+const soundArrayBufferCache: Record<string, Promise<ArrayBuffer | null>> = {}
+const soundDecodedCache: Record<string, AudioBuffer | null> = {}
+let filesPreloaded = false
+
+function preloadSoundFiles() {
+  if (filesPreloaded) return
+  filesPreloaded = true
+  Object.entries(SOUND_FILES).forEach(([key, file]) => {
+    soundArrayBufferCache[key] = fetch(SOUND_DIR + file)
+      .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error("missing"))))
+      .catch(() => null)
+  })
+}
+if (typeof window !== "undefined") preloadSoundFiles()
+
+// decodeAudioData needs a real AudioContext, and creating that outside a
+// user gesture is exactly what silently breaks Web Audio forever on iOS
+// Safari — so decoding is deferred here, called from primeAudioContext()
+// (a real gesture handler), never from preloadSoundFiles() above.
+function decodeSoundFiles() {
+  const audio = getCtx()
+  if (!audio) return
+  Object.keys(SOUND_FILES).forEach((key) => {
+    void Promise.resolve(soundArrayBufferCache[key]).then((arrBuf) => {
+      if (!arrBuf) {
+        soundDecodedCache[key] = null
+        return
+      }
+      audio
+        .decodeAudioData(arrBuf.slice(0))
+        .then((decoded) => {
+          soundDecodedCache[key] = decoded
+        })
+        .catch(() => {
+          soundDecodedCache[key] = null
+        })
+    })
+  })
+}
+
+function getSoundBuffer(key: string): AudioBuffer | null {
+  const v = soundDecodedCache[key]
+  return v && typeof v.duration === "number" ? v : null
+}
+
+function playSoundBuffer(buffer: AudioBuffer, gain = 0.9) {
+  const audio = getCtx()
+  if (!audio) return
+  const src = audio.createBufferSource()
+  src.buffer = buffer
+  const amp = audio.createGain()
+  amp.gain.value = gain
+  src.connect(amp).connect(audio.destination)
+  src.start(0)
+}
+
 function tone(
   freq: number,
   startTime: number,
@@ -110,6 +185,9 @@ function tone(
 
 /** Soft neutral tone for a non-punishing "still learning" self-assessment. */
 export function playNeutral() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("neutral")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   tone(330, audio.currentTime, 0.15, { type: "sine", gain: 0.12 })
@@ -117,6 +195,9 @@ export function playNeutral() {
 
 /** Tiny click for card flips / navigation. */
 export function playFlip() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("flip")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   tone(440, audio.currentTime, 0.05, { type: "square", gain: 0.06 })
@@ -124,6 +205,9 @@ export function playFlip() {
 
 /** Fun little ascending arpeggio for finishing a session. */
 export function playComplete() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("complete")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -139,6 +223,9 @@ export function playComplete() {
  * a couple of claps layered on for a hot streak.
  */
 export function playStreak(streak: number) {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("streak")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -169,6 +256,9 @@ export function playStreak(streak: number) {
  * descending "womp womp womp" so it reads as a real setback, not a blip.
  */
 export function playLifeLost() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("lifeLost")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -179,6 +269,9 @@ export function playLifeLost() {
 
 /** Triumphant "1UP"-style jingle for earning a bonus life. */
 export function playExtraLife() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("extraLife")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -189,6 +282,9 @@ export function playExtraLife() {
 
 /** Somber descending tone when lives run out. */
 export function playGameOver() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("gameOver")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.8)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -317,6 +413,9 @@ function crowdCheer(startTime: number, duration: number) {
  * "memorized" reward, which should feel like a genuine prize, not a chime.
  */
 export function playCelebrate() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("celebrate")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.85)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime
@@ -334,6 +433,9 @@ export function playCelebrate() {
 
 /** Big celebratory fanfare for beating a high score. */
 export function playHighScore() {
+  if (!isSoundEnabled()) return
+  const fileBuf = getSoundBuffer("highScore")
+  if (fileBuf) return playSoundBuffer(fileBuf, 0.85)
   const audio = getCtx()
   if (!audio) return
   const t = audio.currentTime

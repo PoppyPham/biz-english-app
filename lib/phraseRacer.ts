@@ -4,6 +4,7 @@ import type { Phrase } from "@/lib/types"
 export interface RacerQuestion {
   sentence: string
   answer: string[]
+  fullSentence: string
 }
 
 // Turns a phrase + its example sentence into a fill-in-the-blank question by
@@ -33,7 +34,7 @@ export function buildRacerQuestion(phrase: Phrase): RacerQuestion | null {
   const blanks = answer.map(() => "_").join(" ")
   const sentence = [before, blanks, after].filter(Boolean).join(" ")
 
-  return { sentence, answer }
+  return { sentence, answer, fullSentence: example }
 }
 
 export function buildRacerDeck(phrases: Phrase[]): RacerQuestion[] {

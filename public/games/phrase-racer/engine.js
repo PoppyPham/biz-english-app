@@ -59,14 +59,22 @@
   var STAR_FAR_SPACING = TREE_FAR_SPACING / 4; // 35
   var STAR_NEAR_SPACING = TREE_NEAR_SPACING / 3; // 30
   var DUST_SPACING = ROAD_DASH / 2; // 20
-  var PLANET_SPACING = TREE_FAR_SPACING * 3; // 420
+  var PLANET_SPACING = TREE_FAR_SPACING * 2; // 280 — more planets in view
   var NEBULA_SPACING = TREE_FAR_SPACING * 6; // 840
 
+  // Picked per-planet via a hashed pseudo-random index (not k % length), so
+  // consecutive planets don't fall into an obvious short repeating cycle.
   var PLANET_PALETTES = [
-    { body: "#c2694a", shade: "#7a3f2a", ring: false },
-    { body: "#3b82c4", shade: "#1f4e78", ring: false },
-    { body: "#caa15a", shade: "#7d6236", ring: true },
-    { body: "#7c6a9e", shade: "#453a5c", ring: false },
+    { body: "#c2694a", shade: "#7a3f2a", ring: false, bands: false },
+    { body: "#3b82c4", shade: "#1f4e78", ring: false, bands: false },
+    { body: "#caa15a", shade: "#7d6236", ring: true, bands: true },
+    { body: "#7c6a9e", shade: "#453a5c", ring: false, bands: true },
+    { body: "#22c55e", shade: "#0f5c33", ring: false, bands: false },
+    { body: "#e2789a", shade: "#8a3c56", ring: true, bands: false },
+    { body: "#2dd4bf", shade: "#0f6b60", ring: false, bands: true },
+    { body: "#f59e0b", shade: "#8a5406", ring: true, bands: true },
+    { body: "#94a3b8", shade: "#475569", ring: false, bands: false },
+    { body: "#ef4444", shade: "#7f1d1d", ring: false, bands: true },
   ];
   var NEBULA_COLORS = ["rgba(34,197,94,0.10)", "rgba(14,165,233,0.10)", "rgba(124,58,237,0.09)"];
 
@@ -108,6 +116,22 @@
     } catch (e) { /* audio unavailable, non-essential */ }
   }
 
+  // Speaks the full (un-blanked) example sentence after every answer, right
+  // or wrong, so the player hears the phrase used correctly regardless.
+  function speakText(text) {
+    try {
+      if (!text || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      u.rate = 1;
+      u.pitch = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  var PRAISE_WORDS = ["Awesome!", "Excellent!", "Fantastic!"];
+
   function unlockAudio() {
     try {
       var ctx = getCtx();
@@ -117,7 +141,67 @@
       src.connect(ctx.destination);
       src.start(0);
       holdPlaybackAudioSession();
+      decodeSoundFiles();
     } catch (e) { /* game still playable without sound */ }
+  }
+
+  // ── Optional user-supplied sound files ──────────────────────────────────
+  // Drop an audio file into public/games/phrase-racer/sounds/ using one of
+  // the exact names below to replace that synthesized effect with your own
+  // recording. Anything not provided (or that fails to load) silently keeps
+  // using the built-in synthesis — nothing to configure in code.
+  var SOUND_DIR = "/games/phrase-racer/sounds/";
+  var SOUND_FILES = {
+    engineLoop: "engine-loop.mp3", // looping ambient sound while flying
+    correct: "correct.mp3", // right answer
+    wrong: "wrong.mp3", // the instant a wrong answer is submitted
+    crash: "crash.mp3", // asteroid impact
+    nitro: "nitro.mp3", // NITRO triggers
+    extraLife: "extra-life.mp3", // streak of 10
+    gameOver: "game-over.mp3", // lives reach 0
+  };
+  // Fetching (network) has no user-gesture requirement, so it's kicked off
+  // as soon as the game mounts. decodeAudioData needs an AudioContext
+  // though, and creating that context outside a real user gesture is what
+  // silently breaks Web Audio forever on iOS Safari — so decoding itself is
+  // deferred to decodeSoundFiles(), called from inside unlockAudio() (the
+  // Start-button click handler), never from preloadSoundFiles() below.
+  var soundArrayBufferCache = {};
+  var soundDecodedCache = {};
+  function preloadSoundFiles() {
+    Object.keys(SOUND_FILES).forEach(function (key) {
+      if (soundArrayBufferCache[key] !== undefined) return;
+      soundArrayBufferCache[key] = fetch(SOUND_DIR + SOUND_FILES[key])
+        .then(function (res) { if (!res.ok) throw new Error("missing"); return res.arrayBuffer(); })
+        .catch(function () { return null; });
+    });
+  }
+  function decodeSoundFiles() {
+    var ctx = getCtx();
+    Object.keys(SOUND_FILES).forEach(function (key) {
+      Promise.resolve(soundArrayBufferCache[key]).then(function (arrBuf) {
+        if (!arrBuf) { soundDecodedCache[key] = null; return; }
+        ctx.decodeAudioData(arrBuf.slice(0))
+          .then(function (decoded) { soundDecodedCache[key] = decoded; })
+          .catch(function () { soundDecodedCache[key] = null; });
+      });
+    });
+  }
+  function getSoundBuffer(key) {
+    var v = soundDecodedCache[key];
+    return v && typeof v.duration === "number" ? v : null;
+  }
+  function playSoundBuffer(buffer, gainVal) {
+    try {
+      var ctx = getCtx();
+      var src = ctx.createBufferSource();
+      src.buffer = buffer;
+      var g = ctx.createGain();
+      g.gain.value = gainVal != null ? gainVal : 0.9;
+      src.connect(g); g.connect(ctx.destination);
+      src.start(0);
+      return src;
+    } catch (e) { return null; }
   }
 
   // ── Race-y sound design: distorted engine growl, tire screech, turbo ────
@@ -186,6 +270,8 @@
 
   // Detuned sawtooth+square pair through distortion+lowpass: a revving V8.
   function sfxEngineRev() {
+    var fileBuf = getSoundBuffer("correct");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     try {
       var ctx = getCtx(); var t = ctx.currentTime;
       var osc1 = ctx.createOscillator();
@@ -216,6 +302,8 @@
   // High-Q bandpass sweep: screeching tires, fired the instant a wrong
   // answer is decided (before the impact boom lands).
   function sfxTireScreech() {
+    var fileBuf = getSoundBuffer("wrong");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     var ctx = getCtx(); var t = ctx.currentTime;
     noiseBurst(t, 0.5, { gain: 0.22, filterType: "bandpass", freq: 2900, freqEnd: 1300, q: 16 });
     noiseBurst(t + 0.03, 0.4, { gain: 0.15, filterType: "bandpass", freq: 3400, freqEnd: 1600, q: 20 });
@@ -223,6 +311,8 @@
 
   // Distorted sub-bass thump + metal-crunch noise: the impact itself.
   function sfxImpactCrash() {
+    var fileBuf = getSoundBuffer("crash");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     try {
       var ctx = getCtx(); var t = ctx.currentTime;
       var osc = ctx.createOscillator();
@@ -244,6 +334,8 @@
 
   // Rising filtered noise + sawtooth glide: turbo spool-up.
   function sfxNitroBoost() {
+    var fileBuf = getSoundBuffer("nitro");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     var ctx = getCtx(); var t = ctx.currentTime;
     noiseBurst(t, 0.5, { gain: 0.18, filterType: "bandpass", freq: 350, freqEnd: 3200, q: 0.8 });
     try {
@@ -261,12 +353,16 @@
   }
 
   function sfxExtraLife() {
+    var fileBuf = getSoundBuffer("extraLife");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     var ctx = getCtx(); var t = ctx.currentTime;
     tone(660, t, 0.12, { type: "square", gain: 0.12 });
     tone(660, t + 0.15, 0.16, { type: "square", gain: 0.12 });
   }
 
   function sfxGameOver() {
+    var fileBuf = getSoundBuffer("gameOver");
+    if (fileBuf) { playSoundBuffer(fileBuf, 0.9); return; }
     try {
       var ctx = getCtx(); var t = ctx.currentTime;
       var osc = ctx.createOscillator();
@@ -348,6 +444,57 @@
       return out;
     })();
 
+    preloadSoundFiles();
+
+    // ── Optional user-supplied images (ship + planets) ───────────────────
+    // Drop PNGs into public/games/phrase-racer/images/ to replace the
+    // canvas-drawn ship/planets. Nothing found -> keeps drawing them as
+    // before. See images/README.md for exact file names.
+    var IMAGE_DIR = "/games/phrase-racer/images/";
+    var SHIP_TIERS = [
+      { file: "ship-1.png", minDistance: 0 },
+      { file: "ship-2.png", minDistance: 500 },
+      { file: "ship-3.png", minDistance: 2000 },
+    ];
+    var shipImages = {}; // tier file -> { img, ready }
+    function preloadShipImages() {
+      SHIP_TIERS.forEach(function (tier) {
+        var img = new Image();
+        var entry = { img: img, ready: false };
+        img.onload = function () { entry.ready = true; };
+        img.src = IMAGE_DIR + tier.file;
+        shipImages[tier.file] = entry;
+      });
+    }
+    function pickShipTierFile(bestDistanceM) {
+      var chosen = SHIP_TIERS[0].file;
+      for (var i = 0; i < SHIP_TIERS.length; i++) {
+        if (bestDistanceM >= SHIP_TIERS[i].minDistance) chosen = SHIP_TIERS[i].file;
+      }
+      return chosen;
+    }
+
+    var PLANET_IMAGE_CANDIDATE_COUNT = 6;
+    var readyPlanetImages = [];
+    function preloadPlanetImages(categorySlug) {
+      var urls = [];
+      if (categorySlug) {
+        for (var i = 1; i <= PLANET_IMAGE_CANDIDATE_COUNT; i++) {
+          urls.push(IMAGE_DIR + "planets/" + categorySlug + "/planet-" + i + ".png");
+        }
+      }
+      for (var j = 1; j <= PLANET_IMAGE_CANDIDATE_COUNT; j++) {
+        urls.push(IMAGE_DIR + "planets/planet-" + j + ".png");
+      }
+      urls.forEach(function (url) {
+        var img = new Image();
+        img.onload = function () { readyPlanetImages.push(img); };
+        img.src = url;
+      });
+    }
+    preloadShipImages();
+    preloadPlanetImages(opts.categorySlug);
+
     injectStyles();
     container.classList.add("pr-mount");
     container.innerHTML = buildMarkup(opts.categoryName || "");
@@ -367,6 +514,8 @@
     var finalDistanceEl = container.querySelector(".pr-final-distance");
     var startBtn = container.querySelector(".pr-start-btn");
     var restartBtn = container.querySelector(".pr-restart-btn");
+    var celebrateEl = container.querySelector(".pr-celebrate");
+    var continueBtn = container.querySelector(".pr-continue-btn");
 
     var cssW = 0, cssH = 0;
 
@@ -375,6 +524,21 @@
     var engineLoop = null;
     function startEngineLoop() {
       if (engineLoop) return;
+      var fileBuf = getSoundBuffer("engineLoop");
+      if (fileBuf) {
+        try {
+          var actxFile = getCtx();
+          var fileSrc = actxFile.createBufferSource();
+          fileSrc.buffer = fileBuf;
+          fileSrc.loop = true;
+          var fileGain = actxFile.createGain();
+          fileGain.gain.value = 0;
+          fileSrc.connect(fileGain); fileGain.connect(actxFile.destination);
+          fileSrc.start();
+          engineLoop = { mode: "file", source: fileSrc, gain: fileGain };
+          return;
+        } catch (e) { /* fall through to synth below */ }
+      }
       try {
         var actx = getCtx();
         var osc1 = actx.createOscillator();
@@ -407,6 +571,7 @@
         noiseSrc.start();
 
         engineLoop = {
+          mode: "synth",
           osc1: osc1, osc2: osc2, filter: engineFilter, gain: engineGain,
           roadFilter: roadFilter, roadGain: roadGain, noiseSrc: noiseSrc,
         };
@@ -418,11 +583,16 @@
         var actx = getCtx();
         var now = actx.currentTime;
         var revs = Math.max(0, Math.min(1, speedKmh / 150));
+        var playing = phase === "PLAYING";
+        if (engineLoop.mode === "file") {
+          engineLoop.gain.gain.setTargetAtTime(playing ? 0.5 + revs * 0.4 : 0, now, playing ? 0.2 : 0.08);
+          engineLoop.source.playbackRate.setTargetAtTime(0.85 + revs * 0.5, now, 0.15);
+          return;
+        }
         var baseFreq = 42 + revs * 95;
         engineLoop.osc1.frequency.setTargetAtTime(baseFreq, now, 0.08);
         engineLoop.osc2.frequency.setTargetAtTime(baseFreq * 1.004, now, 0.08);
         engineLoop.filter.frequency.setTargetAtTime(450 + revs * 2000, now, 0.12);
-        var playing = phase === "PLAYING";
         engineLoop.gain.gain.setTargetAtTime(playing ? 0.07 + revs * 0.08 : 0, now, playing ? 0.2 : 0.08);
         engineLoop.roadFilter.frequency.setTargetAtTime(400 + revs * 900, now, 0.15);
         engineLoop.roadGain.gain.setTargetAtTime(playing ? 0.02 + revs * 0.035 : 0, now, playing ? 0.25 : 0.1);
@@ -434,10 +604,14 @@
         var actx = getCtx();
         var now = actx.currentTime;
         engineLoop.gain.gain.setTargetAtTime(0, now, 0.05);
-        engineLoop.roadGain.gain.setTargetAtTime(0, now, 0.05);
-        engineLoop.osc1.stop(now + 0.3);
-        engineLoop.osc2.stop(now + 0.3);
-        engineLoop.noiseSrc.stop(now + 0.3);
+        if (engineLoop.mode === "file") {
+          engineLoop.source.stop(now + 0.3);
+        } else {
+          engineLoop.roadGain.gain.setTargetAtTime(0, now, 0.05);
+          engineLoop.osc1.stop(now + 0.3);
+          engineLoop.osc2.stop(now + 0.3);
+          engineLoop.noiseSrc.stop(now + 0.3);
+        }
       } catch (e) { /* ignore */ }
       engineLoop = null;
     }
@@ -585,10 +759,13 @@
         state.lives += 1;
         sfxExtraLife();
       }
+      showCelebration(effectiveSpeed());
+      speakText(state.run.q.fullSentence);
       loadQuestion(false);
     }
 
     function resolveWrong() {
+      speakText(state.run.q.fullSentence);
       state.streak = 0;
       state.lives = Math.max(0, state.lives - 1);
       state.speed = Math.max(CONFIG.SPEED_MIN, state.speed - CONFIG.SPEED_DOWN);
@@ -599,6 +776,18 @@
       state.crashApproachSpeed = effectiveSpeed();
       state.crashAsteroidShape = makeAsteroidShape();
       sfxTireScreech();
+    }
+
+    // Reached once the crash animation's HOLD window ends — the game
+    // freezes here (asteroid + phrase fully visible, no timer) until the
+    // player taps Continue, so they can read the phrase at their own pace.
+    function enterReview() {
+      state.phase = "REVIEW";
+    }
+
+    function continueAfterReview() {
+      if (state.phase !== "REVIEW") return;
+      finishCrash();
     }
 
     function finishCrash() {
@@ -626,6 +815,8 @@
     function restart() {
       state = initialState();
       gameoverScreen.classList.add("pr-hidden");
+      celebrateEl.classList.add("pr-hidden");
+      celebrateEl.classList.remove("pr-show");
       startGame();
     }
 
@@ -722,7 +913,10 @@
           state.crashImpactPlayed = true;
           sfxImpactCrash();
         }
-        if (state.crashMs >= c.TOTAL) finishCrash();
+        if (state.crashMs >= c.HOLD) {
+          state.crashMs = c.HOLD;
+          enterReview();
+        }
       }
     }
 
@@ -764,37 +958,72 @@
       }
     }
 
-    function drawOnePlanet(x, y, r, pal) {
+    function drawOnePlanet(x, y, r, pal, seedK) {
       ctx.save();
       ctx.translate(x, y);
+
       if (pal.ring) {
+        var tilt = -0.5 + pseudoRandom(seedK * 11.3) * 0.4;
         ctx.save();
-        ctx.rotate(-0.35);
-        ctx.strokeStyle = pal.shade;
-        ctx.globalAlpha = 0.7;
-        ctx.lineWidth = Math.max(1.5, r * 0.12);
+        ctx.rotate(tilt);
+        ctx.strokeStyle = pal.body;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = Math.max(1.5, r * 0.14);
         ctx.beginPath();
-        ctx.ellipse(0, 0, r * 1.7, r * 0.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, r * 1.85, r * 0.55, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = Math.max(1, r * 0.06);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 2.1, r * 0.64, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.clip();
       var g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
       g.addColorStop(0, pal.body);
       g.addColorStop(1, pal.shade);
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0, 0, r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(-r, -r, r * 2, r * 2);
+
+      if (pal.bands) {
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = pal.shade;
+        var bandCount = 3 + Math.floor(pseudoRandom(seedK * 6.6) * 3);
+        for (var bi = 0; bi < bandCount; bi++) {
+          var by = -r + ((r * 2) / bandCount) * bi + pseudoRandom(seedK * 3.3 + bi) * r * 0.3;
+          var bh = r * 0.1 + pseudoRandom(seedK * 2.1 + bi) * r * 0.12;
+          ctx.fillRect(-r, by, r * 2, bh);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+
       ctx.restore();
     }
 
     function drawPlanets(w, h) {
+      if (readyPlanetImages.length > 0) {
+        for (var xi = -state.scroll.far; xi < w + PLANET_SPACING; xi += PLANET_SPACING) {
+          var ki = Math.round((xi + state.scroll.far) / PLANET_SPACING);
+          var img = readyPlanetImages[Math.floor(pseudoRandom(ki * 17.3) * readyPlanetImages.length)];
+          var yi = h * (0.08 + pseudoRandom(ki * 9.1) * 0.62);
+          var size = h * (0.09 + pseudoRandom(ki * 4.4) * 0.22);
+          ctx.drawImage(img, xi - size / 2, yi - size / 2, size, size);
+        }
+        return;
+      }
       for (var x = -state.scroll.far; x < w + PLANET_SPACING; x += PLANET_SPACING) {
         var k = Math.round((x + state.scroll.far) / PLANET_SPACING);
-        var pal = PLANET_PALETTES[Math.abs(k) % PLANET_PALETTES.length];
-        var y = h * (0.12 + pseudoRandom(k * 9.1) * 0.55);
-        var r = h * (0.05 + pseudoRandom(k * 4.4) * 0.05);
-        drawOnePlanet(x, y, r, pal);
+        var palIdx = Math.floor(pseudoRandom(k * 17.3) * PLANET_PALETTES.length);
+        var pal = PLANET_PALETTES[palIdx];
+        var y = h * (0.08 + pseudoRandom(k * 9.1) * 0.62);
+        var r = h * (0.035 + pseudoRandom(k * 4.4) * 0.095);
+        drawOnePlanet(x, y, r, pal, k);
       }
     }
 
@@ -971,7 +1200,13 @@
 
       ctx.save();
       ctx.translate(x, y + bob + hop);
-      drawShipBody(shipW, shipH, flashOn);
+      var bestDistanceM = typeof opts.getBestDistanceM === "function" ? opts.getBestDistanceM() : 0;
+      var shipImgEntry = shipImages[pickShipTierFile(bestDistanceM)];
+      if (shipImgEntry && shipImgEntry.ready && !flashOn) {
+        ctx.drawImage(shipImgEntry.img, 0, 0, shipW, shipH);
+      } else {
+        drawShipBody(shipW, shipH, flashOn);
+      }
       ctx.restore();
     }
 
@@ -1130,6 +1365,27 @@
       timerBar.style.background = pct > 0.5 ? "var(--pr-primary)" : pct > 0.2 ? "var(--pr-amber)" : "var(--pr-red)";
     }
 
+    function syncContinueButton() {
+      continueBtn.classList.toggle("pr-hidden", state.phase !== "REVIEW");
+    }
+
+    var celebrateTimeout = null;
+    function showCelebration(speedKmh) {
+      var word = PRAISE_WORDS[Math.floor(Math.random() * PRAISE_WORDS.length)];
+      celebrateEl.innerHTML =
+        '<div class="pr-celebrate-word">' + word + "</div>" +
+        '<div class="pr-celebrate-sub">Speed increased to ' + Math.round(speedKmh) + " km/h!</div>";
+      celebrateEl.classList.remove("pr-hidden");
+      // restart the CSS pop-in animation even if it's already mid-fade
+      celebrateEl.classList.remove("pr-show");
+      void celebrateEl.offsetWidth;
+      celebrateEl.classList.add("pr-show");
+      if (celebrateTimeout) clearTimeout(celebrateTimeout);
+      celebrateTimeout = setTimeout(function () {
+        celebrateEl.classList.remove("pr-show");
+      }, 900);
+    }
+
     function render() {
       var w = cssW, h = cssH;
       if (!w || !h) return;
@@ -1166,7 +1422,9 @@
 
       if (state.phase === "PLAYING" && nitroActive()) drawStarStreaks(w, h);
 
-      if (state.phase === "CRASHING") drawAsteroid(w, h, shipX, shipCenterY, state.crashMs);
+      if (state.phase === "CRASHING" || state.phase === "REVIEW") {
+        drawAsteroid(w, h, shipX, shipCenterY, state.crashMs);
+      }
 
       ctx.restore();
 
@@ -1174,6 +1432,7 @@
 
       syncHud();
       syncTimerBar();
+      syncContinueButton();
     }
 
     // ── Main loop ───────────────────────────────────────────────────────
@@ -1210,6 +1469,7 @@
 
     startBtn.addEventListener("click", startGame);
     restartBtn.addEventListener("click", restart);
+    continueBtn.addEventListener("click", continueAfterReview);
     poolEl.addEventListener("click", function (e) {
       var btn = e.target.closest(".pr-pool-word");
       if (btn) onPoolClick(Number(btn.dataset.id));
@@ -1272,6 +1532,14 @@
       ".pr-pool-word:active{transform:scale(0.96);}",
       ".pr-pool-word.pr-used{opacity:0.25;pointer-events:none;}",
       ".pr-empty{display:flex;height:100%;align-items:center;justify-content:center;color:#8a8f8c;font-size:14px;}",
+      ".pr-celebrate{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) scale(0.7);text-align:center;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .25s ease;z-index:5;}",
+      ".pr-celebrate.pr-hidden{display:none;}",
+      ".pr-celebrate.pr-show{opacity:1;transform:translate(-50%,-50%) scale(1);}",
+      ".pr-celebrate-word{font-size:26px;font-weight:800;color:var(--pr-primary);text-shadow:0 2px 12px rgba(34,197,94,0.6);}",
+      ".pr-celebrate-sub{margin-top:2px;font-size:13px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.8);}",
+      ".pr-continue-btn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--pr-primary);color:var(--pr-primary-fg);border:none;border-radius:999px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,0.4);}",
+      ".pr-continue-btn.pr-hidden{display:none;}",
+      ".pr-continue-btn:active{transform:translateX(-50%) scale(0.96);}",
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -1293,6 +1561,8 @@
             '<div class="pr-nitro-badge pr-hidden">⚡ NITRO</div>' +
             '<div class="pr-timer-bar-wrap"><div class="pr-timer-bar"></div></div>' +
           '</div>' +
+          '<div class="pr-celebrate pr-hidden"></div>' +
+          '<button type="button" class="pr-continue-btn pr-hidden">Continue ▶</button>' +
           '<div class="pr-overlay pr-start-screen">' +
             '<h1>Phrase <span>Racer</span></h1>' +
             (subtitle ? '<p style="color:#22c55e;font-weight:600;">' + escapeHtml(subtitle) + '</p>' : '') +

@@ -17,6 +17,8 @@ interface PhraseRacerApi {
     opts: {
       questions: RacerQuestion[]
       categoryName: string
+      categorySlug: string | null
+      getBestDistanceM: () => number
       onGameOver: (distanceM: number) => void
     }
   ) => PhraseRacerHandle
@@ -50,6 +52,11 @@ export function PhraseRacerGame({
     if (!engineReady || !container || !window.PhraseRacer) return
 
     const supabase = createClient()
+    // A plain variable captured in the opts object literal below would
+    // freeze at 0 forever, since mount() reads getBestDistanceM() fresh on
+    // every frame but the fetch below resolves asynchronously — a getter
+    // closing over this outer `bestSaved` lets the ship-tier lookup (and
+    // the save-if-higher check) see the real value as soon as it loads.
     let bestSaved = 0
     let cancelled = false
 
@@ -68,6 +75,8 @@ export function PhraseRacerGame({
     const handle = window.PhraseRacer.mount(container, {
       questions,
       categoryName,
+      categorySlug,
+      getBestDistanceM: () => bestSaved,
       onGameOver: (distanceM) => {
         if (!userId) return
         const rounded = Math.round(distanceM)
